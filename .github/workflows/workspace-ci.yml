@@ -56,15 +56,23 @@ jobs:
       - name: Show submodule status
         run: pnpm run submodules:status
 
-      - name: Prepare shared UI for apps
+      - name: Check core-lint
+        run: pnpm --filter @pylonline/core-lint run check
+
+      - name: Check core-ui
+        run: pnpm --filter @pylonline/core-ui run check
+
+      - name: Check portal
         run: |
           pnpm --filter portal run core-ui:prepare
           pnpm --filter portal run ui:sync
-          pnpm --filter pylon run core-ui:prepare
-          pnpm --filter pylon run ui:sync
+          pnpm --filter portal run check
 
-      - name: Run checks
-        run: pnpm run check
+      - name: Check pylon
+        run: |
+          pnpm --filter pylon-local-node run core-ui:prepare
+          pnpm --filter pylon-local-node run ui:sync
+          pnpm --filter pylon-local-node run check
 
       - name: Run tests
         run: pnpm run test
