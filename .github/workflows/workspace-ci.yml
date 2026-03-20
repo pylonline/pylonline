@@ -56,6 +56,13 @@ jobs:
       - name: Show submodule status
         run: pnpm run submodules:status
 
+      - name: Prepare shared UI for apps
+        run: |
+          pnpm --filter portal run core-ui:prepare
+          pnpm --filter portal run ui:sync
+          pnpm --filter pylon run core-ui:prepare
+          pnpm --filter pylon run ui:sync
+
       - name: Run checks
         run: pnpm run check
 
