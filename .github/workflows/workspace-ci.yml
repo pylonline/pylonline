@@ -1,0 +1,72 @@
+name: Workspace CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Validate workspace secret
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PACKAGES_TOKEN}" ]; then
+            echo "::error::Missing PACKAGES_PAT in the pylonline workspace repo."
+            echo "::error::It must allow private repo checkout and GitHub Packages reads."
+            exit 1
+          fi
+
+      - name: Configure Git auth for private submodules
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          git config --global url."https://x-access-token:${PACKAGES_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git submodule sync --recursive
+          git submodule update --init --recursive
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Configure GitHub Packages auth
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          {
+            echo "@pylonline:registry=https://npm.pkg.github.com"
+            echo "//npm.pkg.github.com/:_authToken=${PACKAGES_TOKEN}"
+            echo "always-auth=true"
+          } > ~/.npmrc
+
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Show submodule status
+        run: pnpm run submodules:status
+
+      - name: Run checks
+        run: pnpm run check
+
+      - name: Run tests
+        run: pnpm run test

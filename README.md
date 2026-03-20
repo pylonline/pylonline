@@ -2,6 +2,8 @@
 
 This repository is the workspace and orchestration layer for the Pylonline codebase.
 
+It uses Git submodules to pin the active child-repo commits for coordinated development and verification.
+
 It is not the source-of-truth repo for app code. The source-of-truth lives in these child repos:
 
 - `core-lint`
@@ -48,6 +50,12 @@ git clone --recurse-submodules https://github.com/pylonline/pylonline.git
 cd pylonline
 pnpm install
 ```
+
+## CI Notes
+
+- Workspace CI in this repo requires a `PACKAGES_PAT` Actions secret.
+- That token must be able to read private GitHub repos and GitHub Packages for the `pylonline` org.
+- The workspace repo itself can stay public without exposing private child-repo code. A public clone only sees submodule pointers and metadata unless the user has access to the private repos.
 
 If the repo is already cloned:
 
