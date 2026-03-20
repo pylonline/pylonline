@@ -81,4 +81,7 @@ pnpm run lint
 - The long-term target is versioned package consumption plus workspace linking during local development.
 - This repo is the local control plane, not the product-code monorepo.
 
-See [docs/repo-map.md](/home/asta/pylonline/pylonline/docs/repo-map.md) for the current repo responsibilities and conventions.
+See:
+
+- [docs/repo-map.md](/home/asta/pylonline/pylonline/docs/repo-map.md) for repo responsibilities and conventions
+- [docs/notes/local-workspace-layout.md](/home/asta/pylonline/pylonline/docs/notes/local-workspace-layout.md) for parent-folder layout guidance
