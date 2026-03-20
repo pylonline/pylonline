@@ -17,7 +17,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: false
+          token: ${{ secrets.PACKAGES_PAT }}
+          submodules: recursive
 
       - name: Validate workspace secret
         env:
@@ -29,15 +30,6 @@ jobs:
             echo "::error::It must allow private repo checkout and GitHub Packages reads."
             exit 1
           fi
-
-      - name: Configure Git auth for private submodules
-        env:
-          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
-        run: |
-          set -euo pipefail
-          git config --global url."https://x-access-token:${PACKAGES_TOKEN}@github.com/".insteadOf "https://github.com/"
-          git submodule sync --recursive
-          git submodule update --init --recursive
 
       - uses: pnpm/action-setup@v4
         with:
