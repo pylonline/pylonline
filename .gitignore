@@ -2,3 +2,4 @@ node_modules/
 .pnpm-store/
 .cache/
 .DS_Store
+*.log
