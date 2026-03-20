@@ -85,3 +85,4 @@ See:
 
 - [docs/repo-map.md](/home/asta/pylonline/pylonline/docs/repo-map.md) for repo responsibilities and conventions
 - [docs/notes/local-workspace-layout.md](/home/asta/pylonline/pylonline/docs/notes/local-workspace-layout.md) for parent-folder layout guidance
+- [docs/notes/workspace-ci-and-shared-ui.md](/home/asta/pylonline-workspace/pylonline/docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior

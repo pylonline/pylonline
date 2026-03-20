@@ -1,6 +1,8 @@
 name: Workspace CI
 
 on:
+  # Push runs only for direct updates to main.
+  # Feature branch validation happens through pull_request when the PR targets main.
   push:
     branches:
       - main
@@ -51,28 +53,54 @@ jobs:
           } > ~/.npmrc
 
       - name: Install workspace
+        # Workspace root scripts live in package.json:
+        #   package.json#L5-L18
+        # We allow lockfile refresh here because submodule/package changes can land
+        # before the workspace lockfile is intentionally updated.
         run: pnpm install --no-frozen-lockfile
 
       - name: Show submodule status
+        # package.json#L6-L8
         run: pnpm run submodules:status
 
       - name: Check core-lint
+        # core-lint/package.json#L7-L15 -> "check": node bin/core-lint.cjs check
+        # core-lint/bin/core-lint.cjs#L44-L49 -> format + eslint + stylelint + ui checks
+        # core-lint/core-lint.config.cjs#L3-L20 defines the checked paths for this repo.
         run: pnpm --filter @pylonline/core-lint run check
 
       - name: Check core-ui
+        # core-ui/package.json#L13-L23 -> shared lint/stylelint/format/check scripts
+        # core-ui/core-lint.config.cjs#L3-L20 defines lintRoots/stylelintRoots/formatRoots.
         run: pnpm --filter @pylonline/core-ui run check
 
       - name: Check portal
+        # portal/package.json#L31-L36
+        #   core-ui:prepare -> scripts/prepare-core-ui.cjs
+        #   ui:sync         -> scripts/sync-core-ui.cjs
+        #   check           -> core-lint check using portal/core-lint.config.cjs
+        # portal/core-lint.config.cjs#L3-L26 also adds ui:check as a repo-specific check.
         run: |
           pnpm --filter portal run core-ui:prepare
           pnpm --filter portal run ui:sync
           pnpm --filter portal run check
 
       - name: Check pylon
+        # pylon/package.json#L10-L27
+        #   core-ui:prepare -> scripts/prepare-core-ui.cjs
+        #   ui:sync         -> scripts/sync-core-ui.cjs
+        #   check           -> core-lint check using pylon/core-lint.config.cjs
+        # pylon/core-lint.config.cjs#L3-L25 also adds ui:check as a repo-specific check.
         run: |
           pnpm --filter pylon-local-node run core-ui:prepare
           pnpm --filter pylon-local-node run ui:sync
           pnpm --filter pylon-local-node run check
 
       - name: Run tests
+        # package.json#L11 -> pnpm -r --if-present run test
+        # This currently expands to:
+        #   core-ui/package.json#L11-L12   -> node --test tests/unit/*.test.cjs
+        #   portal/package.json#L35-L36    -> npm run ui:sync && node --test tests/unit/*.test.mjs
+        #   pylon/package.json#L25-L28     -> npm run test:unit (node --test tests/unit/*.test.cjs)
+        # core-lint has no test script, so pnpm skips it.
         run: pnpm run test
