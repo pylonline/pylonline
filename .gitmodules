@@ -1,0 +1,20 @@
+[submodule "core-lint"]
+	path = core-lint
+	url = https://github.com/pylonline/core-lint.git
+	branch = main
+[submodule "core-ui"]
+	path = core-ui
+	url = https://github.com/pylonline/core-ui.git
+	branch = main
+[submodule "portal"]
+	path = portal
+	url = https://github.com/pylonline/portal.git
+	branch = main
+[submodule "pylon"]
+	path = pylon
+	url = https://github.com/pylonline/pylon.git
+	branch = main
+[submodule "docs"]
+	path = docs
+	url = https://github.com/pylonline/docs.git
+	branch = main

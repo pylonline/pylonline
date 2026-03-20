@@ -1,0 +1,20 @@
+{
+  "name": "@pylonline/workspace",
+  "private": true,
+  "description": "Workspace orchestration repo for the Pylonline repos",
+  "scripts": {
+    "submodules:init": "git submodule update --init --recursive",
+    "submodules:update": "git submodule update --remote --recursive",
+    "submodules:status": "git submodule status --recursive",
+    "install:workspace": "pnpm install",
+    "check": "pnpm -r --if-present run check",
+    "test": "pnpm -r --if-present run test",
+    "lint": "pnpm -r --if-present run lint",
+    "stylelint": "pnpm -r --if-present run stylelint",
+    "format:check": "pnpm -r --if-present run format:check",
+    "portal:ui:sync": "pnpm --filter portal run ui:sync",
+    "portal:ui:check": "pnpm --filter portal run ui:check",
+    "pylon:ui:sync": "pnpm --filter pylon run ui:sync",
+    "pylon:ui:check": "pnpm --filter pylon run ui:check"
+  }
+}
