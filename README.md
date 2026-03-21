@@ -32,13 +32,6 @@ pylonline/
 - submodule pointers for the four child repos
 - workspace docs and ramp-up notes
 
-## What Does Not Live Here
-
-- product source copied out of child repos
-- top-level app builds checked into this repo
-- committed `node_modules`
-- disposable caches
-
 ## Bootstrap
 
 1. Clone the workspace repo.
