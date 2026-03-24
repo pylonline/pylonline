@@ -9,6 +9,7 @@
     "install:workspace": "pnpm install",
     "check": "pnpm -r --if-present run check",
     "test": "pnpm -r --if-present run test",
+    "coverage": "pnpm -r --if-present run coverage",
     "lint": "pnpm -r --if-present run lint",
     "stylelint": "pnpm -r --if-present run stylelint",
     "format:check": "pnpm -r --if-present run format:check",
@@ -16,5 +17,9 @@
     "portal:ui:check": "pnpm --filter portal run ui:check",
     "pylon:ui:sync": "pnpm --filter pylon run ui:sync",
     "pylon:ui:check": "pnpm --filter pylon run ui:check"
+  },
+  "devDependencies": {
+    "c8": "^11.0.0",
+    "tsx": "^4.21.0"
   }
 }

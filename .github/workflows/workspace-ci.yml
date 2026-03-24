@@ -98,9 +98,23 @@ jobs:
 
       - name: Run tests
         # package.json#L11 -> pnpm -r --if-present run test
-        # This currently expands to:
-        #   core-ui/package.json#L11-L12   -> node --test tests/unit/*.test.cjs
-        #   portal/package.json#L35-L36    -> npm run ui:sync && node --test tests/unit/*.test.mjs
-        #   pylon/package.json#L25-L28     -> npm run test:unit (node --test tests/unit/*.test.cjs)
-        # core-lint has no test script, so pnpm skips it.
+        # Portal now runs executable TypeScript runtime tests plus its existing
+        # generated-bundle unit tests.
         run: pnpm run test
+
+      - name: Run coverage
+        # package.json#L10-L14 now includes workspace-level coverage orchestration.
+        # Each repo writes c8 output into its own coverage/ directory and prints a
+        # text summary to the job log.
+        run: pnpm run coverage
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-coverage
+          path: |
+            core-lint/coverage
+            core-ui/coverage
+            portal/coverage
+            pylon/coverage
+          if-no-files-found: error
