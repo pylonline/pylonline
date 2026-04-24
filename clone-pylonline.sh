@@ -6,6 +6,8 @@ REPO_SSH_URL="${PYLONLINE_REPO_SSH_URL:-git@github.com:pylonline/pylonline.git}"
 DEFAULT_TARGET_DIR="${PYLONLINE_TARGET_DIR:-pylonline}"
 TARGET_DIR="$DEFAULT_TARGET_DIR"
 WORK_DIR=""
+LAUNCH_DIR="$(pwd -P)"
+SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 CLONE_URL="$REPO_HTTPS_URL"
 INSTALL_DEPS=1
 CHECKOUT_MAIN=1
@@ -163,13 +165,12 @@ check_target_dir() {
   fi
 
   local target_parent
-  local target_base
   target_parent="$(dirname -- "$TARGET_DIR")"
-  target_base="$(basename -- "$TARGET_DIR")"
 
   [ -d "$target_parent" ] || fail "parent directory does not exist: $target_parent"
 
-  WORK_DIR="$target_parent/.${target_base}.clone-tmp-$$"
+  mkdir "$TARGET_DIR"
+  WORK_DIR="$TARGET_DIR/.clone-tmp-$$"
   if [ -e "$WORK_DIR" ]; then
     fail "$WORK_DIR already exists. Remove it or rerun the installer."
   fi
@@ -222,8 +223,35 @@ install_dependencies() {
 
 publish_workspace() {
   log "Publishing completed workspace"
-  mv "$WORK_DIR" "$TARGET_DIR"
+  mv "$WORK_DIR/.git" "$TARGET_DIR/.git"
+  (
+    shopt -s dotglob nullglob
+    for entry in "$WORK_DIR"/*; do
+      mv "$entry" "$TARGET_DIR/"
+    done
+  )
+  rmdir "$WORK_DIR"
   WORK_DIR=""
+}
+
+remove_downloaded_helper() {
+  local script_abs
+  local target_abs
+
+  script_abs="$(cd "$(dirname -- "$SCRIPT_PATH")" && pwd -P)/$(basename -- "$SCRIPT_PATH")"
+  target_abs="$(cd "$TARGET_DIR" && pwd -P)"
+
+  if [ "$script_abs" = "$target_abs/clone-pylonline.sh" ]; then
+    note "Keeping tracked helper at: $script_abs"
+    return 0
+  fi
+
+  case "$script_abs" in
+    "$LAUNCH_DIR"/clone-pylonline.sh)
+      rm -f -- "$script_abs"
+      note "Removed downloaded helper: $script_abs"
+      ;;
+  esac
 }
 
 main() {
@@ -242,6 +270,7 @@ main() {
   checkout_submodule_main
   install_dependencies
   publish_workspace
+  remove_downloaded_helper
 
   log "Done"
   note "Workspace installed at: $TARGET_DIR"
