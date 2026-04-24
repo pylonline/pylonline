@@ -170,10 +170,7 @@ check_target_dir() {
   [ -d "$target_parent" ] || fail "parent directory does not exist: $target_parent"
 
   mkdir "$TARGET_DIR"
-  WORK_DIR="$TARGET_DIR/.clone-tmp-$$"
-  if [ -e "$WORK_DIR" ]; then
-    fail "$WORK_DIR already exists. Remove it or rerun the installer."
-  fi
+  WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/pylonline-clone.XXXXXXXXXX")"
 }
 
 clone_workspace() {
@@ -259,6 +256,7 @@ main() {
 
   log "Pylonline clone helper"
   need_command git
+  need_command mktemp
   explain_auth
   if [ "$CLONE_URL" = "$REPO_SSH_URL" ]; then
     setup_ssh_auth
