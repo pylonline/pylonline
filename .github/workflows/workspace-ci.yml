@@ -1,14 +1,17 @@
 name: Workspace CI
 
 on:
-  # Push runs only for direct updates to main.
-  # Feature branch validation happens through pull_request when the PR targets main.
+  # Push runs only for direct updates to protected integration branches.
+  # Feature branch validation happens through pull_request when the PR targets
+  # main or release.
   push:
     branches:
       - main
+      - release
   pull_request:
     branches:
       - main
+      - release
   workflow_dispatch:
 
 jobs:
@@ -73,17 +76,17 @@ jobs:
         # core-lint/package.json#L7-L15 -> "check": node bin/core-lint.cjs check
         # core-lint/bin/core-lint.cjs#L44-L49 -> format + eslint + stylelint + ui checks
         # core-lint/core-lint.config.cjs#L3-L20 defines the checked paths for this repo.
-        run: pnpm --filter @pylonline/core-lint run check
+        run: pnpm --filter @pylonline/core-lint --fail-if-no-match run check
 
       - name: Check core-ui
         # core-ui/package.json#L13-L23 -> shared lint/stylelint/format/check scripts
         # core-ui/core-lint.config.cjs#L3-L20 defines lintRoots/stylelintRoots/formatRoots.
-        run: pnpm --filter @pylonline/core-ui run check
+        run: pnpm --filter @pylonline/core-ui --fail-if-no-match run check
 
       - name: Check scripts
         # scripts/package.json#L6-L17 -> shared lint/stylelint/format/check scripts
         # scripts/core-lint.config.cjs#L3-L18 defines lintRoots/stylelintRoots/formatRoots.
-        run: pnpm --filter @pylonline/scripts run check
+        run: pnpm --filter @pylonline/scripts --fail-if-no-match run check
 
       - name: Check portal
         # portal/package.json#L31-L36
@@ -92,9 +95,9 @@ jobs:
         #   check           -> core-lint check using portal/core-lint.config.cjs
         # portal/core-lint.config.cjs#L3-L26 also adds ui:check as a repo-specific check.
         run: |
-          pnpm --filter portal run core-ui:prepare
-          pnpm --filter portal run ui:sync
-          pnpm --filter portal run check
+          pnpm --filter @pylonline/portal --fail-if-no-match run core-ui:prepare
+          pnpm --filter @pylonline/portal --fail-if-no-match run ui:sync
+          pnpm --filter @pylonline/portal --fail-if-no-match run check
 
       - name: Check pylon
         # pylon/package.json#L10-L27
@@ -103,9 +106,9 @@ jobs:
         #   check           -> core-lint check using pylon/core-lint.config.cjs
         # pylon/core-lint.config.cjs#L3-L25 also adds ui:check as a repo-specific check.
         run: |
-          pnpm --filter pylon-local-node run core-ui:prepare
-          pnpm --filter pylon-local-node run ui:sync
-          pnpm --filter pylon-local-node run check
+          pnpm --filter @pylonline/pylon --fail-if-no-match run core-ui:prepare
+          pnpm --filter @pylonline/pylon --fail-if-no-match run ui:sync
+          pnpm --filter @pylonline/pylon --fail-if-no-match run check
 
       - name: Run tests
         # package.json root test script delegates to child repos with test scripts,

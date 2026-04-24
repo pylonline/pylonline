@@ -20,10 +20,10 @@
     "lint": "npm run lint:workspace-root && pnpm -r --if-present run lint",
     "stylelint": "npm run stylelint:workspace-root && pnpm -r --if-present run stylelint",
     "format:check": "npm run format:check:workspace-root && pnpm -r --if-present run format:check",
-    "portal:ui:sync": "pnpm --filter portal run ui:sync",
-    "portal:ui:check": "pnpm --filter portal run ui:check",
-    "pylon:ui:sync": "pnpm --filter pylon run ui:sync",
-    "pylon:ui:check": "pnpm --filter pylon run ui:check"
+    "portal:ui:sync": "pnpm --filter @pylonline/portal --fail-if-no-match run ui:sync",
+    "portal:ui:check": "pnpm --filter @pylonline/portal --fail-if-no-match run ui:check",
+    "pylon:ui:sync": "pnpm --filter @pylonline/pylon --fail-if-no-match run ui:sync",
+    "pylon:ui:check": "pnpm --filter @pylonline/pylon --fail-if-no-match run ui:check"
   },
   "devDependencies": {
     "c8": "^11.0.0",

@@ -5,6 +5,7 @@ REPO_HTTPS_URL="${PYLONLINE_REPO_URL:-https://github.com/pylonline/pylonline.git
 REPO_SSH_URL="${PYLONLINE_REPO_SSH_URL:-git@github.com:pylonline/pylonline.git}"
 DEFAULT_TARGET_DIR="${PYLONLINE_TARGET_DIR:-pylonline}"
 TARGET_DIR="$DEFAULT_TARGET_DIR"
+WORK_DIR=""
 CLONE_URL="$REPO_HTTPS_URL"
 INSTALL_DEPS=1
 CHECKOUT_MAIN=1
@@ -160,12 +161,25 @@ check_target_dir() {
     fi
     fail "$TARGET_DIR already exists. Choose another --dir or remove the existing path."
   fi
+
+  local target_parent
+  local target_base
+  target_parent="$(dirname -- "$TARGET_DIR")"
+  target_base="$(basename -- "$TARGET_DIR")"
+
+  [ -d "$target_parent" ] || fail "parent directory does not exist: $target_parent"
+
+  WORK_DIR="$target_parent/.${target_base}.clone-tmp-$$"
+  if [ -e "$WORK_DIR" ]; then
+    fail "$WORK_DIR already exists. Remove it or rerun the installer."
+  fi
 }
 
 clone_workspace() {
   log "Cloning workspace"
   note "Target: $TARGET_DIR"
   note "Repo:   $CLONE_URL"
+  note "Working directory: $WORK_DIR"
 
   git clone \
     --recurse-submodules \
@@ -174,14 +188,14 @@ clone_workspace() {
     --filter=blob:none \
     --jobs=8 \
     "$CLONE_URL" \
-    "$TARGET_DIR"
+    "$WORK_DIR"
 }
 
 checkout_submodule_main() {
   [ "$CHECKOUT_MAIN" -eq 1 ] || return 0
 
   log "Switching submodules to main"
-  git -C "$TARGET_DIR" submodule foreach --recursive 'git switch main'
+  git -C "$WORK_DIR" submodule foreach --recursive 'git switch main'
 }
 
 install_dependencies() {
@@ -189,14 +203,14 @@ install_dependencies() {
 
   log "Installing workspace dependencies"
   if command -v pnpm >/dev/null 2>&1; then
-    pnpm -C "$TARGET_DIR" install
+    pnpm -C "$WORK_DIR" install
     return 0
   fi
 
   if command -v corepack >/dev/null 2>&1; then
     note "pnpm was not found. Enabling pnpm through Corepack."
     corepack enable pnpm
-    pnpm -C "$TARGET_DIR" install
+    pnpm -C "$WORK_DIR" install
     return 0
   fi
 
@@ -204,6 +218,12 @@ install_dependencies() {
   note "Install Node.js with Corepack or pnpm, then run:"
   note "  cd $TARGET_DIR"
   note "  pnpm install"
+}
+
+publish_workspace() {
+  log "Publishing completed workspace"
+  mv "$WORK_DIR" "$TARGET_DIR"
+  WORK_DIR=""
 }
 
 main() {
@@ -221,6 +241,7 @@ main() {
   clone_workspace
   checkout_submodule_main
   install_dependencies
+  publish_workspace
 
   log "Done"
   note "Workspace installed at: $TARGET_DIR"

@@ -15,7 +15,9 @@ chmod +x clone-pylonline.sh
 The installer assumes you already have a GitHub account. It checks for Git,
 walks you through GitHub authentication when needed, clones this workspace with
 submodules, switches initialized submodules to `main`, and installs workspace
-dependencies with `pnpm` when available.
+dependencies with `pnpm` when available. It clones into a hidden temporary
+folder first, then renames it to `pylonline/` after checkout completes so
+editors do not show half-cloned submodules as file changes.
 
 If you prefer SSH:
 
