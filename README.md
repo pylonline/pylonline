@@ -2,6 +2,29 @@
 
 This repository is the workspace and orchestration layer for the Pylonline codebase.
 
+## How to Clone
+
+Download and run the installer from this repo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pylonline/pylonline/main/clone-pylonline.sh -o clone-pylonline.sh
+chmod +x clone-pylonline.sh
+./clone-pylonline.sh
+```
+
+The installer assumes you already have a GitHub account. It checks for Git,
+walks you through GitHub authentication when needed, clones this workspace with
+submodules, switches initialized submodules to `main`, and installs workspace
+dependencies with `pnpm` when available. It clones into a hidden temporary
+folder first, then renames it to `pylonline/` after checkout completes so
+editors do not show half-cloned submodules as file changes.
+
+If you prefer SSH:
+
+```bash
+./clone-pylonline.sh --ssh
+```
+
 It uses Git submodules to pin the active child-repo commits for coordinated development and verification.
 
 It is not the source-of-truth repo for app code. The source-of-truth lives in these child repos:
@@ -37,15 +60,32 @@ pylonline/
 
 ## Bootstrap
 
-1. Clone the workspace repo.
+1. Clone the workspace repo with parallel, shallow submodules.
 2. Initialize submodules.
 3. Install workspace dependencies with `pnpm`.
 
 ```bash
-git clone --recurse-submodules https://github.com/pylonline/pylonline.git
+git clone \
+  --recurse-submodules \
+  --shallow-submodules \
+  --depth=1 \
+  --filter=blob:none \
+  --jobs=8 \
+  https://github.com/pylonline/pylonline.git
 cd pylonline
+git submodule foreach --recursive 'git switch main'
 pnpm install
 ```
+
+The `--jobs=8` flag fetches submodules in parallel. The `--depth=1`,
+`--shallow-submodules`, and `--filter=blob:none` flags keep the initial clone
+small and fetch deeper history or file blobs only when needed.
+Recursive submodule clone checks out the recorded commits first; the
+`git submodule foreach` step switches each initialized child repo to its local
+`main` branch for day-to-day work.
+
+If you need full Git history for release archaeology, bisecting, or older
+submodule commits, clone without the shallow flags.
 
 ## CI Notes
 
@@ -56,7 +96,8 @@ pnpm install
 If the repo is already cloned:
 
 ```bash
-git submodule update --init --recursive
+git submodule update --init --recursive --depth=1 --jobs=8
+pnpm run submodules:checkout-main
 pnpm install
 ```
 
@@ -64,6 +105,7 @@ pnpm install
 
 ```bash
 pnpm run submodules:init
+pnpm run submodules:checkout-main
 pnpm run submodules:status
 pnpm run check
 pnpm run test
@@ -81,6 +123,7 @@ See:
 
 - [docs/repo-map.md](/home/asta/pylonline/pylonline/docs/repo-map.md) for repo responsibilities and conventions
 - [docs/notes/local-workspace-layout.md](/home/asta/pylonline/pylonline/docs/notes/local-workspace-layout.md) for parent-folder layout guidance
+- [docs/notes/fast-clone.md](/home/asta/pylonline-workspace/pylonline/docs/notes/fast-clone.md) for faster clone and submodule checkout guidance
 - [docs/notes/workspace-ci-and-shared-ui.md](/home/asta/pylonline-workspace/pylonline/docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
 - [docs/notes/config-layout.md](/home/asta/pylonline-workspace/pylonline/docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
 
