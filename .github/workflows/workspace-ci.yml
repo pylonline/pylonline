@@ -63,6 +63,12 @@ jobs:
         # package.json#L6-L8
         run: pnpm run submodules:status
 
+      - name: Check workspace root
+        # package.json root scripts:
+        #   check:workspace-root -> core-lint check using workspace core-lint.config.cjs
+        # root config now checks only workspace-owned root files and config wrappers.
+        run: pnpm run check:workspace-root
+
       - name: Check core-lint
         # core-lint/package.json#L7-L15 -> "check": node bin/core-lint.cjs check
         # core-lint/bin/core-lint.cjs#L44-L49 -> format + eslint + stylelint + ui checks
@@ -73,6 +79,11 @@ jobs:
         # core-ui/package.json#L13-L23 -> shared lint/stylelint/format/check scripts
         # core-ui/core-lint.config.cjs#L3-L20 defines lintRoots/stylelintRoots/formatRoots.
         run: pnpm --filter @pylonline/core-ui run check
+
+      - name: Check scripts
+        # scripts/package.json#L6-L17 -> shared lint/stylelint/format/check scripts
+        # scripts/core-lint.config.cjs#L3-L18 defines lintRoots/stylelintRoots/formatRoots.
+        run: pnpm --filter @pylonline/scripts run check
 
       - name: Check portal
         # portal/package.json#L31-L36
@@ -97,9 +108,8 @@ jobs:
           pnpm --filter pylon-local-node run check
 
       - name: Run tests
-        # package.json#L11 -> pnpm -r --if-present run test
-        # Portal now runs executable TypeScript runtime tests plus its existing
-        # generated-bundle unit tests.
+        # package.json root test script delegates to child repos with test scripts,
+        # including scripts/, portal/, pylon/, core-lint/, and core-ui/.
         run: pnpm run test
 
       - name: Run coverage
@@ -117,4 +127,5 @@ jobs:
             core-ui/coverage
             portal/coverage
             pylon/coverage
+            scripts/coverage
           if-no-files-found: error

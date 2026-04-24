@@ -18,3 +18,7 @@
 	path = docs
 	url = https://github.com/pylonline/docs.git
 	branch = main
+[submodule "scripts"]
+	path = scripts
+	url = https://github.com/pylonline/scripts.git
+	branch = main

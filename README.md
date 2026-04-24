@@ -8,8 +8,10 @@ It is not the source-of-truth repo for app code. The source-of-truth lives in th
 
 - `core-lint`
 - `core-ui`
+- `docs`
 - `portal`
 - `pylon`
+- `scripts`
 
 Those repos are tracked here as Git submodules so the workspace can pin a known-good combination of commits.
 
@@ -19,9 +21,10 @@ Those repos are tracked here as Git submodules so the workspace can pin a known-
 pylonline/
   core-lint/   # shared lint/format/package-quality tooling
   core-ui/     # shared UI assets, pages, and sync helpers
+  docs/        # workspace notes and repo map
   portal/      # portal app
   pylon/       # pylon app
-  docs/        # workspace notes and repo map
+  scripts/     # shared workspace scripts and operator tooling
 ```
 
 ## What Lives Here
@@ -29,7 +32,7 @@ pylonline/
 - `pnpm-workspace.yaml`
 - workspace-level `package.json`
 - shared local-install topology
-- submodule pointers for the four child repos
+- submodule pointers for the tracked child repos
 - workspace docs and ramp-up notes
 
 ## Bootstrap
@@ -83,4 +86,3 @@ See:
 
 4/17/26
 <img width="187" height="174" alt="image" src="https://github.com/user-attachments/assets/1c91f2e7-43e1-4a93-8e1f-3491f5a67d27" />
-
