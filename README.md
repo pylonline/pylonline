@@ -128,5 +128,8 @@ See:
 - [docs/notes/workspace-ci-and-shared-ui.md](/home/asta/pylonline-workspace/pylonline/docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
 - [docs/notes/config-layout.md](/home/asta/pylonline-workspace/pylonline/docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
 
-4/17/26
+4/25/2026
+<img width="1026" height="300" alt="image" src="https://github.com/user-attachments/assets/8ca7c272-7cad-4897-ac7e-df981eced043" />
+
+4/17/2026
 <img width="187" height="174" alt="image" src="https://github.com/user-attachments/assets/1c91f2e7-43e1-4a93-8e1f-3491f5a67d27" />
