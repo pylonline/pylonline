@@ -122,15 +122,8 @@ pnpm run lint
 
 See:
 
-- [docs/repo-map.md](/home/asta/pylonline/pylonline/docs/repo-map.md) for repo responsibilities and conventions
-- [docs/notes/local-workspace-layout.md](/home/asta/pylonline/pylonline/docs/notes/local-workspace-layout.md) for parent-folder layout guidance
-- [docs/notes/fast-clone.md](/home/asta/pylonline-workspace/pylonline/docs/notes/fast-clone.md) for faster clone and submodule checkout guidance
-- [docs/notes/workspace-ci-and-shared-ui.md](/home/asta/pylonline-workspace/pylonline/docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
-- [docs/notes/config-layout.md](/home/asta/pylonline-workspace/pylonline/docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
-
-4/25/2026
-<img width="1168" height="368" alt="image" src="https://github.com/user-attachments/assets/819a874c-6aa9-4d22-ab2a-136f1775b249" />
-
-
-4/17/2026
-<img width="187" height="174" alt="image" src="https://github.com/user-attachments/assets/1c91f2e7-43e1-4a93-8e1f-3491f5a67d27" />
+- [docs/repo-map.md](docs/repo-map.md) for repo responsibilities and conventions
+- [docs/notes/local-workspace-layout.md](docs/notes/local-workspace-layout.md) for parent-folder layout guidance
+- [docs/notes/fast-clone.md](docs/notes/fast-clone.md) for faster clone and submodule checkout guidance
+- [docs/notes/workspace-ci-and-shared-ui.md](docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
+- [docs/notes/config-layout.md](docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern

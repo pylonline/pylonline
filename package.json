@@ -30,6 +30,10 @@
     "tsx": "^4.21.0"
   },
   "pnpm": {
+    "overrides": {
+      "is-arrayish": "0.2.1",
+      "tinyglobby": "0.2.16"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "sharp",
