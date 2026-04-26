@@ -601,7 +601,7 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@levischuck/tiny-cbor@0.2.21':
+  '@levischuck/tiny-cbor@0.2.11':
     resolution: {integrity: sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow==}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -672,11 +672,11 @@ packages:
     resolution: {integrity: sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw==}
 
   '@pylonline/core-lint@0.2.2':
-    resolution: {integrity: sha512-9epinelXSVvYCBlxADooWjJAPvHv/K3+9UzkVQ7PoeqJC3FN/DQCRK24A1uSpek2gAHfjk1NN6t7I2vlfy/T4A==, tarball: https://npm.pkg.github.com/download/@pylonline/core-lint/0.2.2/de092c1d455431a2ecb79e959c298eba4c5ca8ae}
+    resolution: {integrity: sha512-QfU/+NN6l0iiGexUtKcrwII61FZ0kt8WlhbxPuC88L37HoAnCIpAglGehvhelh0gRYh6PAyalB03QPQEWJGMUQ==, tarball: https://npm.pkg.github.com/download/@pylonline/core-lint/0.2.2/69e6cf7694a8abb3624ba095014f599a99c32f64}
     hasBin: true
 
   '@pylonline/core-ui@0.2.2':
-    resolution: {integrity: sha512-3U3sigvDYe0fETPtuA3I0Yljolp51uUTfgZIEuWayo8M715ejfNUxVYwH0nWQI68Yi48Tqh36LWFkzYxSzyH+A==, tarball: https://npm.pkg.github.com/download/@pylonline/core-ui/0.2.2/f7d5f1bc40419073c9d2f4a0574c2d5c68c23ac4}
+    resolution: {integrity: sha512-JCloCAoMGsiOzWdRaF459nQfPmwdAs/HPsV1KjZXArCGnZ4+sM0SBZY/0K+F7zfRNO4kUAmf6Fmd3Q6ecbZlJg==, tarball: https://npm.pkg.github.com/download/@pylonline/core-ui/0.2.2/4d3c8ea9fbf0bdbfbb9beaa821fa22e2801900e8}
 
   '@simplewebauthn/browser@13.3.0':
     resolution: {integrity: sha512-BE/UWv6FOToAdVk0EokzkqQQDOWtNydYlY6+OrmiZ5SCNmb41VehttboTetUM3T/fr6EAFYVXjz4My2wg230rQ==}
@@ -2059,7 +2059,7 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@levischuck/tiny-cbor@0.2.21': {}
+  '@levischuck/tiny-cbor@0.2.11': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -2209,7 +2209,7 @@ snapshots:
   '@simplewebauthn/server@13.3.0':
     dependencies:
       '@hexagon/base64': 1.1.28
-      '@levischuck/tiny-cbor': 0.2.21
+      '@levischuck/tiny-cbor': 0.2.11
       '@peculiar/asn1-android': 2.6.0
       '@peculiar/asn1-ecc': 2.6.1
       '@peculiar/asn1-rsa': 2.6.1
