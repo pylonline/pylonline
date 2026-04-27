@@ -122,11 +122,10 @@ pnpm run lint
 
 See:
 
-- [docs/repo-map.md](/home/asta/pylonline/pylonline/docs/repo-map.md) for repo responsibilities and conventions
-- [docs/notes/local-workspace-layout.md](/home/asta/pylonline/pylonline/docs/notes/local-workspace-layout.md) for parent-folder layout guidance
-- [docs/notes/fast-clone.md](/home/asta/pylonline-workspace/pylonline/docs/notes/fast-clone.md) for faster clone and submodule checkout guidance
-- [docs/notes/workspace-ci-and-shared-ui.md](/home/asta/pylonline-workspace/pylonline/docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
-- [docs/notes/config-layout.md](/home/asta/pylonline-workspace/pylonline/docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
-
-4/17/26
-<img width="187" height="174" alt="image" src="https://github.com/user-attachments/assets/1c91f2e7-43e1-4a93-8e1f-3491f5a67d27" />
+- [docs/README.md](docs/README.md) for the docs index and runbook entry points
+- [docs/repo-map.md](docs/repo-map.md) for repo responsibilities and conventions
+- [docs/notes/local-workspace-layout.md](docs/notes/local-workspace-layout.md) for parent-folder layout guidance
+- [docs/notes/fast-clone.md](docs/notes/fast-clone.md) for faster clone and submodule checkout guidance
+- [docs/notes/workspace-ci-and-shared-ui.md](docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
+- [docs/notes/config-layout.md](docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
+- [docs/runbooks/release-preflight.md](docs/runbooks/release-preflight.md) for the one-command release preflight workflow

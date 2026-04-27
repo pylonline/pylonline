@@ -4,3 +4,4 @@ node_modules/
 coverage/
 .DS_Store
 *.log
+core-ui/dist/build-info.json

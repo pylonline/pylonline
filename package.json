@@ -7,6 +7,7 @@
     "submodules:checkout-main": "git submodule foreach --recursive 'git switch main'",
     "submodules:update": "git submodule update --remote --recursive",
     "submodules:status": "git submodule status --recursive",
+    "release:preflight": "node wrang-release.cjs",
     "curstats": "node scripts/curstats.cjs",
     "install:workspace": "pnpm install",
     "lint:workspace-root": "node core-lint/bin/core-lint.cjs lint",
@@ -30,6 +31,10 @@
     "tsx": "^4.21.0"
   },
   "pnpm": {
+    "overrides": {
+      "is-arrayish": "0.2.1",
+      "tinyglobby": "0.2.16"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "sharp",
