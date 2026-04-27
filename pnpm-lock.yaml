@@ -50,8 +50,8 @@ importers:
   core-ui:
     devDependencies:
       '@pylonline/core-lint':
-        specifier: 0.2.2
-        version: 0.2.2(typescript@5.9.3)
+        specifier: 0.1.0
+        version: 0.1.0(typescript@5.9.3)
       c8:
         specifier: ^11.0.0
         version: 11.0.0
@@ -59,8 +59,8 @@ importers:
   portal:
     dependencies:
       '@pylonline/core-ui':
-        specifier: ^0.2.2
-        version: 0.2.2
+        specifier: ^0.1.0
+        version: 0.1.0
       '@simplewebauthn/browser':
         specifier: ^13.2.2
         version: 13.3.0
@@ -75,8 +75,8 @@ importers:
         specifier: ^4.20260424.1
         version: 4.20260426.1
       '@pylonline/core-lint':
-        specifier: 0.2.2
-        version: 0.2.2(typescript@5.9.3)
+        specifier: 0.1.0
+        version: 0.1.0(typescript@5.9.3)
       '@types/node':
         specifier: ^24.12.0
         version: 24.12.0
@@ -90,21 +90,21 @@ importers:
   pylon:
     dependencies:
       '@pylonline/core-ui':
-        specifier: ^0.2.2
-        version: 0.2.2
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       '@playwright/test':
         specifier: 1.52.0
         version: 1.52.0
       '@pylonline/core-lint':
-        specifier: 0.2.2
-        version: 0.2.2(typescript@5.9.3)
+        specifier: 0.1.0
+        version: 0.1.0(typescript@5.9.3)
 
   scripts:
     devDependencies:
       '@pylonline/core-lint':
-        specifier: 0.2.2
-        version: 0.2.2(typescript@5.9.3)
+        specifier: 0.1.0
+        version: 0.1.0(typescript@5.9.3)
       c8:
         specifier: ^11.0.0
         version: 11.0.0
@@ -674,12 +674,12 @@ packages:
   '@poppinss/exception@1.2.3':
     resolution: {integrity: sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw==}
 
-  '@pylonline/core-lint@0.2.2':
-    resolution: {integrity: sha512-7r+AjQENB86YIXUeWT3Y5PK53K8QPHLeCW0pQ9q7/MOkB1edXtwj6HEoF4NtW4R5srQBCU6GKysrIRm8EvqUHw==, tarball: https://npm.pkg.github.com/download/@pylonline/core-lint/0.2.2/9dd55c746212c6a6064d2e20c64b9f5c0f905b50}
+  '@pylonline/core-lint@0.1.0':
+    resolution: {integrity: sha512-ax4r4rmic+a/ZlrgDfy0+BxlF93Us2U7SDYZKI1jOsRQW29Glf5kBeJYW9g3IsYsRnkSqXgPCMawewNV2L8K0g==, tarball: https://npm.pkg.github.com/download/@pylonline/core-lint/0.1.0/e7dbacf702eb19dfb44ec9011ccef714c2b88f43}
     hasBin: true
 
-  '@pylonline/core-ui@0.2.2':
-    resolution: {integrity: sha512-6CDH1dt6VNh7d+2Z/aBhh7/EQ31RnQskQhAb3MfcD9Z3pX89EFCZ/tsy39RBrNOM2s9ZOjHreyUhUQNi3XDb2A==, tarball: https://npm.pkg.github.com/download/@pylonline/core-ui/0.2.2/62e6f199f273adc5684b7d60615259cc37ddad12}
+  '@pylonline/core-ui@0.1.0':
+    resolution: {integrity: sha512-NGLdvnb6mgemSbn9CrUQXZ9kpmCBjirHBPNht6lUrn4leBYBh5Scst+nwl6IQLe152SbKJ7MzAHgx5WtDPN+/A==, tarball: https://npm.pkg.github.com/download/@pylonline/core-ui/0.1.0/8b2304473e1c96f82e6352fb04a87f44335be3d1}
 
   '@simplewebauthn/browser@13.3.0':
     resolution: {integrity: sha512-BE/UWv6FOToAdVk0EokzkqQQDOWtNydYlY6+OrmiZ5SCNmb41VehttboTetUM3T/fr6EAFYVXjz4My2wg230rQ==}
@@ -2114,7 +2114,7 @@ snapshots:
 
   '@poppinss/exception@1.2.3': {}
 
-  '@pylonline/core-lint@0.2.2(typescript@5.9.3)':
+  '@pylonline/core-lint@0.1.0(typescript@5.9.3)':
     dependencies:
       '@eslint/js': 9.39.4
       eslint: 9.39.4
@@ -2128,7 +2128,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@pylonline/core-ui@0.2.2': {}
+  '@pylonline/core-ui@0.1.0': {}
 
   '@simplewebauthn/browser@13.3.0': {}
 
