@@ -37,6 +37,14 @@ jobs:
             ].join("\n");
             try {
               await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              if (pingUser) {
+                await github.rest.issues.addAssignees({
+                  owner,
+                  repo,
+                  issue_number,
+                  assignees: [pingUser],
+                });
+              }
             } catch (error) {
               if (error.status === 403) {
                 core.warning("Release reminder comment skipped due to token permissions (403).");
