@@ -344,8 +344,7 @@ function nowMs() {
 }
 
 function formatDuration(ms) {
-  if (ms < 1000) return `${ms}ms`;
-  const sec = (ms / 1000).toFixed(1);
+  const sec = (ms / 1000).toFixed(3);
   return `${sec}s`;
 }
 
@@ -371,6 +370,27 @@ function resolveExpectedCoreLintVersion(options) {
     return { version: coreLintVersion, source: "local" };
   }
   return { version: configured, source: "explicit" };
+}
+
+function resolveWorkspacePackageVersion(repoName) {
+  const packageJsonPath = path.join(ROOT, repoName, "package.json");
+  if (!fs.existsSync(packageJsonPath)) return "";
+  try {
+    const pkg = readJson(packageJsonPath);
+    return String(pkg?.version || "").trim();
+  } catch (_error) {
+    return "";
+  }
+}
+
+function buildWorkspaceInternalLockRefreshCommand() {
+  const coreLintVersion = resolveWorkspacePackageVersion("core-lint");
+  const coreUiVersion = resolveWorkspacePackageVersion("core-ui");
+  const targets = [];
+  if (coreLintVersion) targets.push(`@pylonline/core-lint@${coreLintVersion}`);
+  if (coreUiVersion) targets.push(`@pylonline/core-ui@${coreUiVersion}`);
+  if (!targets.length) return "";
+  return `pnpm update -r ${targets.join(" ")} --lockfile-only`;
 }
 
 function syncCoreLintPins(options) {
@@ -1227,6 +1247,22 @@ function bumpVersion(repoName, bumpArg) {
 
 async function runWorkspaceChecks(options, summary, failures) {
   printCenteredBanner("WORKSPACE INSTALL + ROOT CHECKS");
+  const internalLockRefreshCommand = buildWorkspaceInternalLockRefreshCommand();
+  if (internalLockRefreshCommand) {
+    const workspaceLockRefreshRes = await recordCommandCheck(
+      summary,
+      failures,
+      "workspace internal package lock refresh",
+      internalLockRefreshCommand,
+      ROOT,
+      options
+    );
+    summary.repoReports.workspace.steps.push({
+      stepName: "internal package lock refresh",
+      status: workspaceLockRefreshRes.ok ? "passed" : "failed",
+      durationMs: workspaceLockRefreshRes.durationMs,
+    });
+  }
   const installCommand = options.noFrozenLockfile
     ? "pnpm install --no-frozen-lockfile"
     : "pnpm install --frozen-lockfile";
