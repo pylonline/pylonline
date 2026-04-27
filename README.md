@@ -122,8 +122,10 @@ pnpm run lint
 
 See:
 
+- [docs/README.md](docs/README.md) for the docs index and runbook entry points
 - [docs/repo-map.md](docs/repo-map.md) for repo responsibilities and conventions
 - [docs/notes/local-workspace-layout.md](docs/notes/local-workspace-layout.md) for parent-folder layout guidance
 - [docs/notes/fast-clone.md](docs/notes/fast-clone.md) for faster clone and submodule checkout guidance
 - [docs/notes/workspace-ci-and-shared-ui.md](docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
 - [docs/notes/config-layout.md](docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
+- [docs/runbooks/release-preflight.md](docs/runbooks/release-preflight.md) for the one-command release preflight workflow

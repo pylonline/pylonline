@@ -1,4 +1,4 @@
-name: Workspace CI
+name: Workspace CI (Checks + Tests + Coverage)
 
 on:
   # Push runs only for direct updates to protected integration branches.
@@ -12,10 +12,12 @@ on:
     branches:
       - main
       - release
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
 jobs:
   workspace:
+    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'preflight' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -110,12 +112,12 @@ jobs:
           pnpm --filter @pylonline/pylon --fail-if-no-match run ui:sync
           pnpm --filter @pylonline/pylon --fail-if-no-match run check
 
-      - name: Run tests
+      - name: Unit tests (workspace aggregate)
         # package.json root test script delegates to child repos with test scripts,
         # including scripts/, portal/, pylon/, core-lint/, and core-ui/.
         run: pnpm run test
 
-      - name: Run coverage
+      - name: Coverage (workspace aggregate)
         # package.json#L10-L14 now includes workspace-level coverage orchestration.
         # Each repo writes c8 output into its own coverage/ directory and prints a
         # text summary to the job log.

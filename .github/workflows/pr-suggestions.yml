@@ -1,0 +1,79 @@
+name: PR Suggestions
+
+on:
+  push:
+    branches:
+      - release
+      - publish
+      - publish/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  suggest-release-backmerge:
+    if: ${{ github.ref_name == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure release -> main PR exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const head = `${owner}:release`;
+            const base = "main";
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open",
+              head,
+              base
+            });
+            if (existing.data.length > 0) {
+              core.info(`Existing PR found: #${existing.data[0].number}`);
+              return;
+            }
+            const created = await github.rest.pulls.create({
+              owner,
+              repo,
+              head: "release",
+              base: "main",
+              title: "chore: merge release back into main",
+              body: "Automated PR suggestion: release branch changes should be reconciled back into main."
+            });
+            core.info(`Created PR #${created.data.number}`);
+
+  suggest-publish-pr:
+    if: ${{ github.ref_name == 'publish' || startsWith(github.ref_name, 'publish/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure publish branch PR exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = context.ref.replace("refs/heads/", "");
+            const head = `${owner}:${branch}`;
+            const base = "release";
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open",
+              head,
+              base
+            });
+            if (existing.data.length > 0) {
+              core.info(`Existing PR found: #${existing.data[0].number}`);
+              return;
+            }
+            const created = await github.rest.pulls.create({
+              owner,
+              repo,
+              head: branch,
+              base,
+              title: `chore: merge ${branch} into ${base}`,
+              body: `Automated PR suggestion for branch \`${branch}\`.`
+            });
+            core.info(`Created PR #${created.data.number}`);
