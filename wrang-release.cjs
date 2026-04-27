@@ -1211,6 +1211,20 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     return;
   }
 
+  const ciInstallRes = await recordCommandCheck(
+    summary,
+    failures,
+    `${repoName} ci install`,
+    "npm install --no-audit --no-fund",
+    dir,
+    options
+  );
+  repoReport.steps.push({
+    stepName: "ci install",
+    status: ciInstallRes.ok ? "passed" : "failed",
+    durationMs: ciInstallRes.durationMs,
+  });
+
   if (repoName === "portal" || repoName === "pylon") {
     const prepRes = await recordCommandCheck(
       summary,
