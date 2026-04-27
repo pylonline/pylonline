@@ -7,6 +7,7 @@ const path = require("node:path");
 
 const ROOT = __dirname;
 const VALID_REPOS = new Set(["workspace", "core-lint", "core-ui", "portal", "pylon", "scripts"]);
+const CORE_LINT_CONSUMERS = ["core-ui", "portal", "pylon", "scripts"];
 
 function parseArgs(argv) {
   const args = {
@@ -15,6 +16,7 @@ function parseArgs(argv) {
     noFrozenLockfile: false,
     dryRun: false,
     summaryJson: false,
+    syncCoreLintVersion: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -49,6 +51,10 @@ function parseArgs(argv) {
       args.summaryJson = true;
       continue;
     }
+    if (arg === "--sync-core-lint-version") {
+      args.syncCoreLintVersion = true;
+      continue;
+    }
     if (arg === "--help" || arg === "-h") {
       printHelpAndExit(0);
     }
@@ -72,13 +78,14 @@ function printHelpAndExit(code, error = "") {
     console.error(`\nError: ${error}\n`);
   }
   console.log(`Usage:
-  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--no-frozen-lockfile]
+  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--sync-core-lint-version] [--no-frozen-lockfile]
 
 Examples:
   node wrang-release.cjs
   node wrang-release.cjs --repo core-ui
   node wrang-release.cjs --repo core-ui --bump patch --dry-run
   node wrang-release.cjs --repo portal --dry-run --summary-json
+  node wrang-release.cjs --sync-core-lint-version
   node wrang-release.cjs --repo core-ui --bump patch
   node wrang-release.cjs --repo portal --no-frozen-lockfile
 
@@ -127,6 +134,71 @@ function formatDuration(ms) {
   if (ms < 1000) return `${ms}ms`;
   const sec = (ms / 1000).toFixed(1);
   return `${sec}s`;
+}
+
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function writeJson(filePath, value) {
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function syncCoreLintPins(options) {
+  const coreLintPkgPath = path.join(ROOT, "core-lint", "package.json");
+  const coreLintVersion = String(readJson(coreLintPkgPath).version || "").trim();
+  if (!coreLintVersion) {
+    throw new Error("Unable to resolve core-lint version from core-lint/package.json");
+  }
+
+  const mismatches = [];
+  for (const repoName of CORE_LINT_CONSUMERS) {
+    const pkgPath = path.join(ROOT, repoName, "package.json");
+    if (!fs.existsSync(pkgPath)) continue;
+    const pkg = readJson(pkgPath);
+    const current = pkg?.devDependencies?.["@pylonline/core-lint"];
+    if (current === coreLintVersion) continue;
+
+    mismatches.push({
+      repo: repoName,
+      current: current || "(missing)",
+      expected: coreLintVersion,
+      filePath: pkgPath,
+      pkg,
+    });
+  }
+
+  if (!mismatches.length) {
+    return {
+      coreLintVersion,
+      changed: [],
+      validated: CORE_LINT_CONSUMERS,
+    };
+  }
+
+  if (!options.syncCoreLintVersion) {
+    const details = mismatches
+      .map((entry) => `${entry.repo}: ${entry.current} -> ${entry.expected}`)
+      .join(", ");
+    throw new Error(
+      `core-lint version pin mismatch detected (${details}). Re-run with --sync-core-lint-version to auto-fix.`
+    );
+  }
+
+  const changed = [];
+  for (const mismatch of mismatches) {
+    const pkg = mismatch.pkg;
+    pkg.devDependencies = pkg.devDependencies || {};
+    pkg.devDependencies["@pylonline/core-lint"] = coreLintVersion;
+    writeJson(mismatch.filePath, pkg);
+    changed.push(mismatch.repo);
+  }
+
+  return {
+    coreLintVersion,
+    changed,
+    validated: CORE_LINT_CONSUMERS,
+  };
 }
 
 function repoDir(repoName) {
@@ -187,6 +259,8 @@ function main() {
     frozenLockfile: !args.noFrozenLockfile,
     dryRun: args.dryRun,
     bump: args.bump || "none",
+    coreLintVersion: "",
+    coreLintPinsUpdated: [],
     checks: [],
     bumpApplied: false,
   };
@@ -196,6 +270,23 @@ function main() {
   console.log(`frozen lockfile: ${args.noFrozenLockfile ? "off" : "on"}`);
   console.log(`dry run: ${args.dryRun ? "on" : "off"}`);
   console.log(`summary json: ${args.summaryJson ? "on" : "off"}`);
+  console.log(`sync core-lint version: ${args.syncCoreLintVersion ? "on" : "off"}`);
+
+  const pinStart = nowMs();
+  const pinResult = syncCoreLintPins(args);
+  summary.coreLintVersion = pinResult.coreLintVersion;
+  summary.coreLintPinsUpdated = pinResult.changed;
+  summary.checks.push({
+    name: "core-lint pin validation",
+    status: "passed",
+    durationMs: nowMs() - pinStart,
+  });
+  if (pinResult.changed.length) {
+    console.log(
+      `Updated core-lint pin to ${pinResult.coreLintVersion} in: ${pinResult.changed.join(", ")}`
+    );
+    console.log("Run pnpm install after preflight to refresh lockfiles if needed.");
+  }
 
   const workspaceStart = nowMs();
   runWorkspaceChecks(args);
@@ -229,6 +320,10 @@ function main() {
   console.log(`frozen lockfile: ${summary.frozenLockfile ? "on" : "off"}`);
   console.log(`dry run: ${summary.dryRun ? "on" : "off"}`);
   console.log(`bump request: ${summary.bump}`);
+  console.log(`core-lint version: ${summary.coreLintVersion || "unknown"}`);
+  console.log(
+    `core-lint pin updates: ${summary.coreLintPinsUpdated.length ? summary.coreLintPinsUpdated.join(", ") : "none"}`
+  );
   console.log(
     `bump applied: ${summary.bump === "none" ? "n/a" : summary.bumpApplied ? "yes" : "no"}`
   );
