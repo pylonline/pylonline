@@ -395,8 +395,8 @@ function syncCoreLintPins(options) {
     const details = mismatches
       .map((entry) => `${entry.repo}: ${entry.current} -> ${entry.expected}`)
       .join(", ");
-    throw new Error(
-      `core-lint version pin mismatch detected (${details}). Re-run with --sync-core-lint-version to auto-fix.`
+    console.warn(
+      `core-lint version pin mismatch detected (${details}). Auto-syncing pins to ${coreLintVersion}.`
     );
   }
 
@@ -658,6 +658,10 @@ function computeRepoStatuses(checks) {
   return order.map((repo) => statuses[repo]);
 }
 
+function toRepoDisplayName(repo) {
+  return repo === "workspace" ? "pylonline" : repo;
+}
+
 function colorizeStatus(status, text) {
   if (!process.stdout.isTTY) return text;
   const reset = "\x1b[0m";
@@ -682,7 +686,7 @@ function printRepoStatusTable(checks, repoReports) {
   }
   const headers = ["repo", "status"];
   const rawRows = rows.map((row) => [
-    row.repo,
+    toRepoDisplayName(row.repo),
     row.status.toUpperCase(),
     String(row.testsPassed),
     String(row.testsFailed),
@@ -1128,6 +1132,34 @@ function ensureRepoExists(repoName) {
   }
 }
 
+function repoNeedsCoreLintLockfileRefresh(dir) {
+  const lockPath = path.join(dir, "package-lock.json");
+  if (!fs.existsSync(lockPath)) return false;
+  const pkgPath = path.join(dir, "package.json");
+  if (!fs.existsSync(pkgPath)) return false;
+  try {
+    const pkg = readJson(pkgPath);
+    const dev = pkg?.devDependencies || {};
+    const deps = pkg?.dependencies || {};
+    return Boolean(dev["@pylonline/core-lint"] || deps["@pylonline/core-lint"]);
+  } catch (_error) {
+    return false;
+  }
+}
+
+function resolveRepoDependencyVersion(dir, packageName) {
+  const pkgPath = path.join(dir, "package.json");
+  if (!fs.existsSync(pkgPath)) return "";
+  try {
+    const pkg = readJson(pkgPath);
+    const dev = pkg?.devDependencies || {};
+    const deps = pkg?.dependencies || {};
+    return String(dev[packageName] || deps[packageName] || "").trim();
+  } catch (_error) {
+    return "";
+  }
+}
+
 function bumpVersion(repoName, bumpArg) {
   if (!bumpArg || repoName === "workspace") return;
   ensureRepoExists(repoName);
@@ -1209,6 +1241,43 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     const repoFailures = failures.filter((failure) => checkNameToRepo(failure.name) === repoName);
     printRepoExecutionSummary(repoName, repoReport, repoFailures);
     return;
+  }
+
+  if (repoNeedsCoreLintLockfileRefresh(dir)) {
+    const pinnedCoreLintVersion = resolveRepoDependencyVersion(dir, "@pylonline/core-lint");
+    const lockRefreshCommand = pinnedCoreLintVersion
+      ? `npm install "@pylonline/core-lint@${pinnedCoreLintVersion}" --package-lock-only --ignore-scripts --prefer-online --force`
+      : "npm install --package-lock-only --ignore-scripts --prefer-online --force";
+    const lockRefreshRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} core-lint lockfile refresh`,
+      lockRefreshCommand,
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "core-lint lockfile refresh",
+      status: lockRefreshRes.ok ? "passed" : "failed",
+      durationMs: lockRefreshRes.durationMs,
+    });
+  }
+
+  const pinnedCoreUiVersion = resolveRepoDependencyVersion(dir, "@pylonline/core-ui");
+  if (pinnedCoreUiVersion) {
+    const coreUiLockRefreshRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} core-ui lockfile refresh`,
+      `npm install "@pylonline/core-ui@${pinnedCoreUiVersion}" --package-lock-only --ignore-scripts --prefer-online --force`,
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "core-ui lockfile refresh",
+      status: coreUiLockRefreshRes.ok ? "passed" : "failed",
+      durationMs: coreUiLockRefreshRes.durationMs,
+    });
   }
 
   const ciInstallRes = await recordCommandCheck(
@@ -1383,7 +1452,7 @@ async function main() {
       console.log(
         `Updated core-lint pin to ${pinResult.coreLintVersion} in: ${pinResult.changed.join(", ")}`
       );
-      console.log("Run pnpm install after preflight to refresh lockfiles if needed.");
+      console.log("Refreshing workspace pnpm lockfile to match updated pin(s).");
     }
     if (pinResult.skipped) {
       console.log("Skipped core-lint pin validation (--core-lint-version skip).");
@@ -1413,6 +1482,22 @@ async function main() {
       name: "core-lint lockfile refresh",
       status: "passed",
       durationMs: nowMs() - refreshStart,
+    });
+  }
+
+  if (pinResult && pinResult.changed.length) {
+    const workspaceLockRefresh = await recordCommandCheck(
+      summary,
+      failures,
+      "workspace pnpm lockfile refresh",
+      "pnpm install --lockfile-only",
+      ROOT,
+      args
+    );
+    summary.repoReports.workspace.steps.push({
+      stepName: "pnpm lockfile refresh",
+      status: workspaceLockRefresh.ok ? "passed" : "failed",
+      durationMs: workspaceLockRefresh.durationMs,
     });
   }
 
