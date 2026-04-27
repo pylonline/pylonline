@@ -11,7 +11,7 @@ on:
 
 jobs:
   workspace:
-    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || contains(fromJSON('["preflight","ci","tests"]'), github.event.label.name) }}
+    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || contains(fromJSON('["preflight","ci","ut"]'), github.event.label.name) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -130,7 +130,7 @@ jobs:
           if-no-files-found: error
 
   clear-rerun-label:
-    if: ${{ github.event_name == 'pull_request' && needs.workspace.result == 'success' && (contains(github.event.pull_request.labels.*.name, 'ci') || contains(github.event.pull_request.labels.*.name, 'tests')) }}
+    if: ${{ github.event_name == 'pull_request' && needs.workspace.result == 'success' && (contains(github.event.pull_request.labels.*.name, 'ci') || contains(github.event.pull_request.labels.*.name, 'ut')) }}
     needs: [workspace]
     runs-on: ubuntu-latest
     permissions:
@@ -144,7 +144,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issue_number = context.payload.pull_request.number;
-            for (const name of ["ci", "tests"]) {
+            for (const name of ["ci", "ut"]) {
               try {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
               } catch (error) {

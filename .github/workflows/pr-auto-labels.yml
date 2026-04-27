@@ -22,7 +22,7 @@ jobs:
             const repo = context.repo.repo;
             const issue_number = context.payload.pull_request.number;
             const desiredLabels = [
-              { name: "tests", color: "1D76DB", description: "[Pylon Line] Repository has test coverage and test workflows." },
+              { name: "ut", color: "1D76DB", description: "[Pylon Line] Repository has unit test coverage and unit-test workflows." },
               { name: "ci", color: "0E8A16", description: "[Pylon Line] Repository has pull request CI workflows." },
             ];
 
