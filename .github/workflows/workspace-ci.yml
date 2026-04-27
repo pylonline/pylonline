@@ -1,13 +1,7 @@
 name: Workspace CI (Checks + Tests + Coverage)
 
 on:
-  # Push runs only for direct updates to protected integration branches.
-  # Feature branch validation happens through pull_request when the PR targets
-  # main or release.
-  push:
-    branches:
-      - main
-      - release
+  # PR validation is the canonical signal for merge readiness.
   pull_request:
     branches:
       - main
