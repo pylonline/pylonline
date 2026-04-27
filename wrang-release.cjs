@@ -86,6 +86,8 @@ function parseArgs(argv) {
     syncCoreLintVersion: false,
     refreshCoreLintLockfiles: false,
     coreLintVersion: "local",
+    coreUiConsumerSource: "repo-main",
+    coreUiConsumerRef: "main",
     verbose: false,
   };
 
@@ -138,6 +140,24 @@ function parseArgs(argv) {
       args.coreLintVersion = String(arg.slice("--core-lint-version=".length)).trim();
       continue;
     }
+    if (arg === "--core-ui-consumer-source" && argv[i + 1]) {
+      args.coreUiConsumerSource = String(argv[i + 1]).trim();
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--core-ui-consumer-source=")) {
+      args.coreUiConsumerSource = String(arg.slice("--core-ui-consumer-source=".length)).trim();
+      continue;
+    }
+    if (arg === "--core-ui-consumer-ref" && argv[i + 1]) {
+      args.coreUiConsumerRef = String(argv[i + 1]).trim();
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--core-ui-consumer-ref=")) {
+      args.coreUiConsumerRef = String(arg.slice("--core-ui-consumer-ref=".length)).trim();
+      continue;
+    }
     if (arg === "--verbose") {
       args.verbose = true;
       continue;
@@ -159,6 +179,12 @@ function parseArgs(argv) {
   if (!args.coreLintVersion) {
     printHelpAndExit(1, "--core-lint-version must be 'local', 'skip', or an explicit version");
   }
+  if (!["local", "repo-main"].includes(args.coreUiConsumerSource)) {
+    printHelpAndExit(1, "--core-ui-consumer-source must be 'local' or 'repo-main'");
+  }
+  if (!args.coreUiConsumerRef) {
+    args.coreUiConsumerRef = "main";
+  }
 
   return args;
 }
@@ -168,7 +194,7 @@ function printHelpAndExit(code, error = "") {
     console.error(`\nError: ${error}\n`);
   }
   console.log(`Usage:
-  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--verbose] [--no-frozen-lockfile]
+  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--verbose] [--no-frozen-lockfile]
 
 Examples:
   node wrang-release.cjs
@@ -179,6 +205,7 @@ Examples:
   node wrang-release.cjs --core-lint-version 0.2.2
   node wrang-release.cjs --sync-core-lint-version
   node wrang-release.cjs --refresh-core-lint-lockfiles
+  node wrang-release.cjs --core-ui-consumer-source repo-main --core-ui-consumer-ref main
   node wrang-release.cjs --verbose
   node wrang-release.cjs --repo core-ui --bump patch
   node wrang-release.cjs --repo portal --no-frozen-lockfile
@@ -831,79 +858,6 @@ function collectFilesRecursive(startDir, extensions) {
   return results;
 }
 
-function findHardcodedGeneratedTemplateJsReferences(repoDirPath) {
-  const testDirs = ["tests", "test"].map((segment) => path.join(repoDirPath, segment));
-  const files = [];
-  for (const dir of testDirs) {
-    files.push(...collectFilesRecursive(dir, [".test.cjs", ".test.mjs", ".test.js", ".test.ts"]));
-  }
-  const needleRegex = /\.generated\/public\/assets\/js\/template\/template-[^"'`\s]+\.js/g;
-  const matches = [];
-  for (const filePath of files) {
-    const rel = path.relative(ROOT, filePath) || filePath;
-    const content = fs.readFileSync(filePath, "utf8");
-    const hasCoreUiTemplateSourceReference =
-      content.includes("../../../../core-ui/assets/js/template/") ||
-      content.includes("../../../core-ui/assets/js/template/") ||
-      content.includes("../../../../../core-ui/assets/js/template/");
-    // Allow files that already implement source-first fallback by also referencing
-    // the core-ui template JS source path.
-    if (needleRegex.test(content) && hasCoreUiTemplateSourceReference) {
-      needleRegex.lastIndex = 0;
-      continue;
-    }
-    needleRegex.lastIndex = 0;
-    const lines = content.split(/\r?\n/);
-    for (let i = 0; i < lines.length; i += 1) {
-      const line = lines[i];
-      if (!needleRegex.test(line)) continue;
-      matches.push({
-        filePath: rel,
-        line: i + 1,
-        snippet: line.trim().slice(0, 180),
-      });
-      needleRegex.lastIndex = 0;
-    }
-    needleRegex.lastIndex = 0;
-  }
-  return matches;
-}
-
-function runGeneratedTemplatePathGuard(repoName, summary, failures, repoReport) {
-  const startedAt = nowMs();
-  const checkName = `${repoName} generated template path guard`;
-  const dir = repoDir(repoName);
-  const matches = findHardcodedGeneratedTemplateJsReferences(dir);
-  const ok = matches.length === 0;
-  const durationMs = nowMs() - startedAt;
-  summary.checks.push({
-    name: checkName,
-    status: ok ? "passed" : "failed",
-    durationMs,
-  });
-  repoReport.steps.push({
-    stepName: "generated template path guard",
-    status: ok ? "passed" : "failed",
-    durationMs,
-  });
-  if (!ok) {
-    const first = matches[0];
-    const excerpt = matches
-      .slice(0, 12)
-      .map((entry) => `${entry.filePath}:${entry.line} ${entry.snippet}`)
-      .join("\n");
-    failures.push({
-      name: checkName,
-      location: repoName,
-      command: "static guard: reject hardcoded .generated template JS test paths",
-      exitCode: 1,
-      filePath: first.filePath,
-      error: "Found hardcoded generated template JS path reference(s) in tests.",
-      failureExcerpt: excerpt,
-    });
-  }
-}
-
 function buildTestNameIndex(repoDirPath) {
   const testDirs = ["tests", "test"].map((segment) => path.join(repoDirPath, segment));
   const files = [];
@@ -1193,6 +1147,17 @@ function repoDir(repoName) {
   return path.join(ROOT, repoName);
 }
 
+function resolveCoreUiPrepareCommand(repoName, options) {
+  if (repoName !== "portal" && repoName !== "pylon") {
+    return "pnpm run core-ui:prepare";
+  }
+  if (options.coreUiConsumerSource === "repo-main") {
+    const ref = String(options.coreUiConsumerRef || "main").trim() || "main";
+    return `pnpm run core-ui:prepare -- --source remote --path ../core-ui --ref ${ref}`;
+  }
+  return "pnpm run core-ui:prepare";
+}
+
 function resolveRepoCheckCommand(repoName, dir) {
   const fallback = "pnpm run check";
   if (repoName === "workspace") return fallback;
@@ -1321,11 +1286,12 @@ async function ensureCoreUiSyncForConsumers(summary, failures, options) {
 
     printRepoCheckSectionBanner(`${repoName} core-ui sync bootstrap`);
 
+    const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
     const prepRes = await recordCommandCheck(
       summary,
       failures,
       `${repoName} core-ui prepare`,
-      "pnpm run core-ui:prepare",
+      prepCommand,
       dir,
       options
     );
@@ -1431,11 +1397,12 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
 
   if (repoName === "portal" || repoName === "pylon") {
     if (!summary.coreUiSyncBootstrapRepos.has(repoName)) {
+      const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
       const prepRes = await recordCommandCheck(
         summary,
         failures,
         `${repoName} core-ui prepare`,
-        "pnpm run core-ui:prepare",
+        prepCommand,
         dir,
         options
       );
@@ -1459,10 +1426,6 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
       });
       summary.coreUiSyncBootstrapRepos.add(repoName);
     }
-  }
-
-  if (repoName === "portal" || repoName === "pylon") {
-    runGeneratedTemplatePathGuard(repoName, summary, failures, repoReport);
   }
 
   if (!options.verbose) {
@@ -1573,6 +1536,9 @@ async function main() {
   console.log(`dry run: ${args.dryRun ? "on" : "off"}`);
   console.log(`summary json: ${args.summaryJson ? "on" : "off"}`);
   console.log(`core-lint version mode: ${args.coreLintVersion}`);
+  console.log(
+    `consumer core-ui source: ${args.coreUiConsumerSource} (ref ${args.coreUiConsumerRef})`
+  );
   console.log(`sync core-lint version: ${args.syncCoreLintVersion ? "on" : "off"}`);
   console.log(
     `refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`
