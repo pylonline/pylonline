@@ -86,6 +86,8 @@ function parseArgs(argv) {
     syncCoreLintVersion: false,
     refreshCoreLintLockfiles: false,
     coreLintVersion: "local",
+    coreUiConsumerSource: "repo-main",
+    coreUiConsumerRef: "main",
     verbose: false,
   };
 
@@ -138,6 +140,24 @@ function parseArgs(argv) {
       args.coreLintVersion = String(arg.slice("--core-lint-version=".length)).trim();
       continue;
     }
+    if (arg === "--core-ui-consumer-source" && argv[i + 1]) {
+      args.coreUiConsumerSource = String(argv[i + 1]).trim();
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--core-ui-consumer-source=")) {
+      args.coreUiConsumerSource = String(arg.slice("--core-ui-consumer-source=".length)).trim();
+      continue;
+    }
+    if (arg === "--core-ui-consumer-ref" && argv[i + 1]) {
+      args.coreUiConsumerRef = String(argv[i + 1]).trim();
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--core-ui-consumer-ref=")) {
+      args.coreUiConsumerRef = String(arg.slice("--core-ui-consumer-ref=".length)).trim();
+      continue;
+    }
     if (arg === "--verbose") {
       args.verbose = true;
       continue;
@@ -159,6 +179,12 @@ function parseArgs(argv) {
   if (!args.coreLintVersion) {
     printHelpAndExit(1, "--core-lint-version must be 'local', 'skip', or an explicit version");
   }
+  if (!["local", "repo-main"].includes(args.coreUiConsumerSource)) {
+    printHelpAndExit(1, "--core-ui-consumer-source must be 'local' or 'repo-main'");
+  }
+  if (!args.coreUiConsumerRef) {
+    args.coreUiConsumerRef = "main";
+  }
 
   return args;
 }
@@ -168,7 +194,7 @@ function printHelpAndExit(code, error = "") {
     console.error(`\nError: ${error}\n`);
   }
   console.log(`Usage:
-  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--verbose] [--no-frozen-lockfile]
+  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--verbose] [--no-frozen-lockfile]
 
 Examples:
   node wrang-release.cjs
@@ -179,6 +205,7 @@ Examples:
   node wrang-release.cjs --core-lint-version 0.2.2
   node wrang-release.cjs --sync-core-lint-version
   node wrang-release.cjs --refresh-core-lint-lockfiles
+  node wrang-release.cjs --core-ui-consumer-source repo-main --core-ui-consumer-ref main
   node wrang-release.cjs --verbose
   node wrang-release.cjs --repo core-ui --bump patch
   node wrang-release.cjs --repo portal --no-frozen-lockfile
@@ -317,8 +344,7 @@ function nowMs() {
 }
 
 function formatDuration(ms) {
-  if (ms < 1000) return `${ms}ms`;
-  const sec = (ms / 1000).toFixed(1);
+  const sec = (ms / 1000).toFixed(3);
   return `${sec}s`;
 }
 
@@ -344,6 +370,27 @@ function resolveExpectedCoreLintVersion(options) {
     return { version: coreLintVersion, source: "local" };
   }
   return { version: configured, source: "explicit" };
+}
+
+function resolveWorkspacePackageVersion(repoName) {
+  const packageJsonPath = path.join(ROOT, repoName, "package.json");
+  if (!fs.existsSync(packageJsonPath)) return "";
+  try {
+    const pkg = readJson(packageJsonPath);
+    return String(pkg?.version || "").trim();
+  } catch (_error) {
+    return "";
+  }
+}
+
+function buildWorkspaceInternalLockRefreshCommand() {
+  const coreLintVersion = resolveWorkspacePackageVersion("core-lint");
+  const coreUiVersion = resolveWorkspacePackageVersion("core-ui");
+  const targets = [];
+  if (coreLintVersion) targets.push(`@pylonline/core-lint@${coreLintVersion}`);
+  if (coreUiVersion) targets.push(`@pylonline/core-ui@${coreUiVersion}`);
+  if (!targets.length) return "";
+  return `pnpm update -r ${targets.join(" ")} --lockfile-only`;
 }
 
 function syncCoreLintPins(options) {
@@ -716,6 +763,25 @@ function printRepoStatusTable(checks, repoReports) {
     String(totals.testsTotal),
   ]);
   printSimpleTable(headers, displayRows, { separatorBeforeLastRow: true });
+}
+
+function collectFailedTestsByRepo(repoReports) {
+  const order = ["workspace", "core-lint", "core-ui", "scripts", "portal", "pylon"];
+  const failed = [];
+  for (const repo of order) {
+    const report = repoReports[repo];
+    if (!report || !Array.isArray(report.tests)) continue;
+    for (const test of report.tests) {
+      if (test.status !== "failed") continue;
+      failed.push({
+        repo: toRepoDisplayName(repo),
+        id: test.id,
+        name: test.name || "-",
+        file: test.file ? toTestFileDisplayPath(test.file) : "-",
+      });
+    }
+  }
+  return failed;
 }
 
 function summarizeCheckCounts(checks) {
@@ -1101,6 +1167,17 @@ function repoDir(repoName) {
   return path.join(ROOT, repoName);
 }
 
+function resolveCoreUiPrepareCommand(repoName, options) {
+  if (repoName !== "portal" && repoName !== "pylon") {
+    return "pnpm run core-ui:prepare";
+  }
+  if (options.coreUiConsumerSource === "repo-main") {
+    const ref = String(options.coreUiConsumerRef || "main").trim() || "main";
+    return `pnpm run core-ui:prepare -- --source remote --path ../core-ui --ref ${ref}`;
+  }
+  return "pnpm run core-ui:prepare";
+}
+
 function resolveRepoCheckCommand(repoName, dir) {
   const fallback = "pnpm run check";
   if (repoName === "workspace") return fallback;
@@ -1170,6 +1247,22 @@ function bumpVersion(repoName, bumpArg) {
 
 async function runWorkspaceChecks(options, summary, failures) {
   printCenteredBanner("WORKSPACE INSTALL + ROOT CHECKS");
+  const internalLockRefreshCommand = buildWorkspaceInternalLockRefreshCommand();
+  if (internalLockRefreshCommand) {
+    const workspaceLockRefreshRes = await recordCommandCheck(
+      summary,
+      failures,
+      "workspace internal package lock refresh",
+      internalLockRefreshCommand,
+      ROOT,
+      options
+    );
+    summary.repoReports.workspace.steps.push({
+      stepName: "internal package lock refresh",
+      status: workspaceLockRefreshRes.ok ? "passed" : "failed",
+      durationMs: workspaceLockRefreshRes.durationMs,
+    });
+  }
   const installCommand = options.noFrozenLockfile
     ? "pnpm install --no-frozen-lockfile"
     : "pnpm install --frozen-lockfile";
@@ -1216,6 +1309,50 @@ async function runWorkspaceChecks(options, summary, failures) {
   });
   const repoFailures = failures.filter((failure) => checkNameToRepo(failure.name) === "workspace");
   printRepoExecutionSummary("workspace", repoReport, repoFailures);
+}
+
+async function ensureCoreUiSyncForConsumers(summary, failures, options) {
+  const consumers = ["portal", "pylon"];
+  for (const repoName of consumers) {
+    const dir = repoDir(repoName);
+    ensureRepoExists(repoName);
+    const repoReport = summary.repoReports[repoName];
+    const alreadySynced = summary.coreUiSyncBootstrapRepos.has(repoName);
+    if (alreadySynced) continue;
+
+    printRepoCheckSectionBanner(`${repoName} core-ui sync bootstrap`);
+
+    const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
+    const prepRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} core-ui prepare`,
+      prepCommand,
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "core-ui prepare",
+      status: prepRes.ok ? "passed" : "failed",
+      durationMs: prepRes.durationMs,
+    });
+
+    const syncRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} ui sync`,
+      "pnpm run ui:sync",
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "ui sync",
+      status: syncRes.ok ? "passed" : "failed",
+      durationMs: syncRes.durationMs,
+    });
+
+    summary.coreUiSyncBootstrapRepos.add(repoName);
+  }
 }
 
 async function runRepoChecksWithOptions(repoName, summary, failures, options) {
@@ -1295,32 +1432,36 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   });
 
   if (repoName === "portal" || repoName === "pylon") {
-    const prepRes = await recordCommandCheck(
-      summary,
-      failures,
-      `${repoName} core-ui prepare`,
-      "pnpm run core-ui:prepare",
-      dir,
-      options
-    );
-    repoReport.steps.push({
-      stepName: "core-ui prepare",
-      status: prepRes.ok ? "passed" : "failed",
-      durationMs: prepRes.durationMs,
-    });
-    const syncRes = await recordCommandCheck(
-      summary,
-      failures,
-      `${repoName} ui sync`,
-      "pnpm run ui:sync",
-      dir,
-      options
-    );
-    repoReport.steps.push({
-      stepName: "ui sync",
-      status: syncRes.ok ? "passed" : "failed",
-      durationMs: syncRes.durationMs,
-    });
+    if (!summary.coreUiSyncBootstrapRepos.has(repoName)) {
+      const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
+      const prepRes = await recordCommandCheck(
+        summary,
+        failures,
+        `${repoName} core-ui prepare`,
+        prepCommand,
+        dir,
+        options
+      );
+      repoReport.steps.push({
+        stepName: "core-ui prepare",
+        status: prepRes.ok ? "passed" : "failed",
+        durationMs: prepRes.durationMs,
+      });
+      const syncRes = await recordCommandCheck(
+        summary,
+        failures,
+        `${repoName} ui sync`,
+        "pnpm run ui:sync",
+        dir,
+        options
+      );
+      repoReport.steps.push({
+        stepName: "ui sync",
+        status: syncRes.ok ? "passed" : "failed",
+        durationMs: syncRes.durationMs,
+      });
+      summary.coreUiSyncBootstrapRepos.add(repoName);
+    }
   }
 
   if (!options.verbose) {
@@ -1409,6 +1550,7 @@ async function main() {
     coreLintVersion: "",
     coreLintPinsUpdated: [],
     coreLintLockfilesRefreshed: [],
+    coreUiSyncBootstrapRepos: new Set(),
     failures: [],
     checks: [],
     repoReports: {
@@ -1430,6 +1572,9 @@ async function main() {
   console.log(`dry run: ${args.dryRun ? "on" : "off"}`);
   console.log(`summary json: ${args.summaryJson ? "on" : "off"}`);
   console.log(`core-lint version mode: ${args.coreLintVersion}`);
+  console.log(
+    `consumer core-ui source: ${args.coreUiConsumerSource} (ref ${args.coreUiConsumerRef})`
+  );
   console.log(`sync core-lint version: ${args.syncCoreLintVersion ? "on" : "off"}`);
   console.log(
     `refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`
@@ -1502,6 +1647,7 @@ async function main() {
   }
 
   await runWorkspaceChecks(args, summary, failures);
+  await ensureCoreUiSyncForConsumers(summary, failures, args);
   for (const repoName of targets) {
     await runRepoChecksWithOptions(repoName, summary, failures, args);
   }
@@ -1545,6 +1691,19 @@ async function main() {
   console.log(`checks: passed ${counts.passed} | failed ${counts.failed} | skipped ${counts.skipped}`);
   console.log(`total: ${formatDuration(totalMs)}`);
   printRepoStatusTable(summary.checks, summary.repoReports);
+  const failedTests = collectFailedTestsByRepo(summary.repoReports);
+  if (failedTests.length) {
+    console.log(`\n${colorizeLabel("error", "FAILED TESTS")}`);
+    const testRows = failedTests.map((test) => [
+      colorizeStatus("failed", "FAILED"),
+      test.repo,
+      String(test.id ?? "-"),
+      test.name || "-",
+      test.file || "-",
+    ]);
+    printSimpleTable(["status", "repo", "#", "test", "file"], testRows);
+  }
+
   if (failures.length) {
     const displayFailures = dedupeFailuresForDisplay(failures);
     console.log(`\n${colorizeLabel("error", "FAILED CHECKS")}`);
@@ -1563,6 +1722,7 @@ async function main() {
   if (args.summaryJson) {
     const summaryPayload = {
       ...summary,
+      coreUiSyncBootstrapRepos: Array.from(summary.coreUiSyncBootstrapRepos),
       totalDurationMs: totalMs,
       checks: summary.checks.map((check) => ({
         ...check,
@@ -1579,6 +1739,12 @@ async function main() {
         ...(failure.error ? { error: failure.error } : {}),
       })),
       repoStatuses: computeRepoStatuses(summary.checks),
+      failedTests: failedTests.map((test) => ({
+        repo: test.repo,
+        id: test.id,
+        testName: test.name,
+        filePath: test.file,
+      })),
     };
     console.log("summary_json:", JSON.stringify(summaryPayload));
   }

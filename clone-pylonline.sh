@@ -24,6 +24,7 @@ SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 CLONE_URL="$REPO_HTTPS_URL"
 INSTALL_DEPS=1
 CHECKOUT_MAIN=1
+SCRIPT_START_EPOCH_MS="$(date +%s%3N)"
 
 SEPARATOR="------------------------------------------------------------"
 
@@ -63,6 +64,15 @@ step() {
 # Print ordinary informational output without extra decoration.
 note() {
   printf '%s\n' "$*"
+}
+
+# Print script runtime in seconds with millisecond precision.
+print_total_runtime() {
+  local now_epoch_ms
+  now_epoch_ms="$(date +%s%3N)"
+  local elapsed_ms
+  elapsed_ms="$((now_epoch_ms - SCRIPT_START_EPOCH_MS))"
+  printf 'Total time: %.3fs\n' "$(awk -v ms="$elapsed_ms" 'BEGIN { printf "%.3f", (ms / 1000) }')"
 }
 
 # Print a fatal error and stop immediately.
@@ -371,6 +381,7 @@ main() {
 
   log "Done"
   note "Workspace installed at: $TARGET_DIR"
+  print_total_runtime
 }
 
 main "$@"
