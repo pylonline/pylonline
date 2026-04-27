@@ -129,3 +129,7 @@ See:
 - [docs/notes/workspace-ci-and-shared-ui.md](docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
 - [docs/notes/config-layout.md](docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
 - [docs/runbooks/release-preflight.md](docs/runbooks/release-preflight.md) for the one-command release preflight workflow
+
+4/25/2026
+<img width="1081" height="364" alt="image" src="https://github.com/user-attachments/assets/e6595493-cd62-4622-91e4-9b0414b95d5c" />
+
