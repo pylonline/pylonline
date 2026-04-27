@@ -831,6 +831,79 @@ function collectFilesRecursive(startDir, extensions) {
   return results;
 }
 
+function findHardcodedGeneratedTemplateJsReferences(repoDirPath) {
+  const testDirs = ["tests", "test"].map((segment) => path.join(repoDirPath, segment));
+  const files = [];
+  for (const dir of testDirs) {
+    files.push(...collectFilesRecursive(dir, [".test.cjs", ".test.mjs", ".test.js", ".test.ts"]));
+  }
+  const needleRegex = /\.generated\/public\/assets\/js\/template\/template-[^"'`\s]+\.js/g;
+  const matches = [];
+  for (const filePath of files) {
+    const rel = path.relative(ROOT, filePath) || filePath;
+    const content = fs.readFileSync(filePath, "utf8");
+    const hasCoreUiTemplateSourceReference =
+      content.includes("../../../../core-ui/assets/js/template/") ||
+      content.includes("../../../core-ui/assets/js/template/") ||
+      content.includes("../../../../../core-ui/assets/js/template/");
+    // Allow files that already implement source-first fallback by also referencing
+    // the core-ui template JS source path.
+    if (needleRegex.test(content) && hasCoreUiTemplateSourceReference) {
+      needleRegex.lastIndex = 0;
+      continue;
+    }
+    needleRegex.lastIndex = 0;
+    const lines = content.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      if (!needleRegex.test(line)) continue;
+      matches.push({
+        filePath: rel,
+        line: i + 1,
+        snippet: line.trim().slice(0, 180),
+      });
+      needleRegex.lastIndex = 0;
+    }
+    needleRegex.lastIndex = 0;
+  }
+  return matches;
+}
+
+function runGeneratedTemplatePathGuard(repoName, summary, failures, repoReport) {
+  const startedAt = nowMs();
+  const checkName = `${repoName} generated template path guard`;
+  const dir = repoDir(repoName);
+  const matches = findHardcodedGeneratedTemplateJsReferences(dir);
+  const ok = matches.length === 0;
+  const durationMs = nowMs() - startedAt;
+  summary.checks.push({
+    name: checkName,
+    status: ok ? "passed" : "failed",
+    durationMs,
+  });
+  repoReport.steps.push({
+    stepName: "generated template path guard",
+    status: ok ? "passed" : "failed",
+    durationMs,
+  });
+  if (!ok) {
+    const first = matches[0];
+    const excerpt = matches
+      .slice(0, 12)
+      .map((entry) => `${entry.filePath}:${entry.line} ${entry.snippet}`)
+      .join("\n");
+    failures.push({
+      name: checkName,
+      location: repoName,
+      command: "static guard: reject hardcoded .generated template JS test paths",
+      exitCode: 1,
+      filePath: first.filePath,
+      error: "Found hardcoded generated template JS path reference(s) in tests.",
+      failureExcerpt: excerpt,
+    });
+  }
+}
+
 function buildTestNameIndex(repoDirPath) {
   const testDirs = ["tests", "test"].map((segment) => path.join(repoDirPath, segment));
   const files = [];
@@ -1386,6 +1459,10 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
       });
       summary.coreUiSyncBootstrapRepos.add(repoName);
     }
+  }
+
+  if (repoName === "portal" || repoName === "pylon") {
+    runGeneratedTemplatePathGuard(repoName, summary, failures, repoReport);
   }
 
   if (!options.verbose) {
