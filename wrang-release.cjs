@@ -718,6 +718,25 @@ function printRepoStatusTable(checks, repoReports) {
   printSimpleTable(headers, displayRows, { separatorBeforeLastRow: true });
 }
 
+function collectFailedTestsByRepo(repoReports) {
+  const order = ["workspace", "core-lint", "core-ui", "scripts", "portal", "pylon"];
+  const failed = [];
+  for (const repo of order) {
+    const report = repoReports[repo];
+    if (!report || !Array.isArray(report.tests)) continue;
+    for (const test of report.tests) {
+      if (test.status !== "failed") continue;
+      failed.push({
+        repo: toRepoDisplayName(repo),
+        id: test.id,
+        name: test.name || "-",
+        file: test.file ? toTestFileDisplayPath(test.file) : "-",
+      });
+    }
+  }
+  return failed;
+}
+
 function summarizeCheckCounts(checks) {
   const counts = { passed: 0, failed: 0, skipped: 0 };
   for (const check of checks) {
@@ -1218,6 +1237,49 @@ async function runWorkspaceChecks(options, summary, failures) {
   printRepoExecutionSummary("workspace", repoReport, repoFailures);
 }
 
+async function ensureCoreUiSyncForConsumers(summary, failures, options) {
+  const consumers = ["portal", "pylon"];
+  for (const repoName of consumers) {
+    const dir = repoDir(repoName);
+    ensureRepoExists(repoName);
+    const repoReport = summary.repoReports[repoName];
+    const alreadySynced = summary.coreUiSyncBootstrapRepos.has(repoName);
+    if (alreadySynced) continue;
+
+    printRepoCheckSectionBanner(`${repoName} core-ui sync bootstrap`);
+
+    const prepRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} core-ui prepare`,
+      "pnpm run core-ui:prepare",
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "core-ui prepare",
+      status: prepRes.ok ? "passed" : "failed",
+      durationMs: prepRes.durationMs,
+    });
+
+    const syncRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} ui sync`,
+      "pnpm run ui:sync",
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "ui sync",
+      status: syncRes.ok ? "passed" : "failed",
+      durationMs: syncRes.durationMs,
+    });
+
+    summary.coreUiSyncBootstrapRepos.add(repoName);
+  }
+}
+
 async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   const dir = repoName === "workspace" ? ROOT : repoDir(repoName);
   if (repoName !== "workspace") ensureRepoExists(repoName);
@@ -1295,32 +1357,35 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   });
 
   if (repoName === "portal" || repoName === "pylon") {
-    const prepRes = await recordCommandCheck(
-      summary,
-      failures,
-      `${repoName} core-ui prepare`,
-      "pnpm run core-ui:prepare",
-      dir,
-      options
-    );
-    repoReport.steps.push({
-      stepName: "core-ui prepare",
-      status: prepRes.ok ? "passed" : "failed",
-      durationMs: prepRes.durationMs,
-    });
-    const syncRes = await recordCommandCheck(
-      summary,
-      failures,
-      `${repoName} ui sync`,
-      "pnpm run ui:sync",
-      dir,
-      options
-    );
-    repoReport.steps.push({
-      stepName: "ui sync",
-      status: syncRes.ok ? "passed" : "failed",
-      durationMs: syncRes.durationMs,
-    });
+    if (!summary.coreUiSyncBootstrapRepos.has(repoName)) {
+      const prepRes = await recordCommandCheck(
+        summary,
+        failures,
+        `${repoName} core-ui prepare`,
+        "pnpm run core-ui:prepare",
+        dir,
+        options
+      );
+      repoReport.steps.push({
+        stepName: "core-ui prepare",
+        status: prepRes.ok ? "passed" : "failed",
+        durationMs: prepRes.durationMs,
+      });
+      const syncRes = await recordCommandCheck(
+        summary,
+        failures,
+        `${repoName} ui sync`,
+        "pnpm run ui:sync",
+        dir,
+        options
+      );
+      repoReport.steps.push({
+        stepName: "ui sync",
+        status: syncRes.ok ? "passed" : "failed",
+        durationMs: syncRes.durationMs,
+      });
+      summary.coreUiSyncBootstrapRepos.add(repoName);
+    }
   }
 
   if (!options.verbose) {
@@ -1409,6 +1474,7 @@ async function main() {
     coreLintVersion: "",
     coreLintPinsUpdated: [],
     coreLintLockfilesRefreshed: [],
+    coreUiSyncBootstrapRepos: new Set(),
     failures: [],
     checks: [],
     repoReports: {
@@ -1502,6 +1568,7 @@ async function main() {
   }
 
   await runWorkspaceChecks(args, summary, failures);
+  await ensureCoreUiSyncForConsumers(summary, failures, args);
   for (const repoName of targets) {
     await runRepoChecksWithOptions(repoName, summary, failures, args);
   }
@@ -1545,6 +1612,19 @@ async function main() {
   console.log(`checks: passed ${counts.passed} | failed ${counts.failed} | skipped ${counts.skipped}`);
   console.log(`total: ${formatDuration(totalMs)}`);
   printRepoStatusTable(summary.checks, summary.repoReports);
+  const failedTests = collectFailedTestsByRepo(summary.repoReports);
+  if (failedTests.length) {
+    console.log(`\n${colorizeLabel("error", "FAILED TESTS")}`);
+    const testRows = failedTests.map((test) => [
+      colorizeStatus("failed", "FAILED"),
+      test.repo,
+      String(test.id ?? "-"),
+      test.name || "-",
+      test.file || "-",
+    ]);
+    printSimpleTable(["status", "repo", "#", "test", "file"], testRows);
+  }
+
   if (failures.length) {
     const displayFailures = dedupeFailuresForDisplay(failures);
     console.log(`\n${colorizeLabel("error", "FAILED CHECKS")}`);
@@ -1563,6 +1643,7 @@ async function main() {
   if (args.summaryJson) {
     const summaryPayload = {
       ...summary,
+      coreUiSyncBootstrapRepos: Array.from(summary.coreUiSyncBootstrapRepos),
       totalDurationMs: totalMs,
       checks: summary.checks.map((check) => ({
         ...check,
@@ -1579,6 +1660,12 @@ async function main() {
         ...(failure.error ? { error: failure.error } : {}),
       })),
       repoStatuses: computeRepoStatuses(summary.checks),
+      failedTests: failedTests.map((test) => ({
+        repo: test.repo,
+        id: test.id,
+        testName: test.name,
+        filePath: test.file,
+      })),
     };
     console.log("summary_json:", JSON.stringify(summaryPayload));
   }
