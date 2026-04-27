@@ -1202,6 +1202,30 @@ function resolveRepoCheckCommand(repoName, dir) {
   return `${process.execPath} ${JSON.stringify(coreLintCliPath)} check${extraArgs}`;
 }
 
+function resolveRepoFormatWriteCommand(repoName, dir) {
+  const fallback = "pnpm run format:write";
+  if (repoName === "workspace") return fallback;
+  const packageJsonPath = path.join(dir, "package.json");
+  if (!fs.existsSync(packageJsonPath)) return fallback;
+
+  let packageJson;
+  try {
+    packageJson = readJson(packageJsonPath);
+  } catch (_error) {
+    return fallback;
+  }
+
+  const formatWriteScript = String(packageJson?.scripts?.["format:write"] || "").trim();
+  if (!formatWriteScript) return "";
+  const match = formatWriteScript.match(/^core-lint\s+format\s+--write(?:\s+(.*))?$/);
+  if (!match) return fallback;
+
+  const coreLintCliPath = path.join(ROOT, "core-lint", "bin", "core-lint.cjs");
+  if (!fs.existsSync(coreLintCliPath)) return fallback;
+  const extraArgs = match[1] ? ` ${match[1]}` : "";
+  return `${process.execPath} ${JSON.stringify(coreLintCliPath)} format --write${extraArgs}`;
+}
+
 function ensureRepoExists(repoName) {
   const dir = repoDir(repoName);
   if (!fs.existsSync(dir)) {
@@ -1466,6 +1490,28 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
 
   if (!options.verbose) {
     console.log(`${repoName} check (pnpm run check):`);
+  }
+  const formatWriteCommand = resolveRepoFormatWriteCommand(repoName, dir);
+  if (formatWriteCommand) {
+    if (!options.verbose) {
+      console.log(`${repoName} format write (${formatWriteCommand}):`);
+    }
+    const formatWriteRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} format write`,
+      formatWriteCommand,
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "format write",
+      status: formatWriteRes.ok ? "passed" : "failed",
+      durationMs: formatWriteRes.durationMs,
+    });
+    if (!options.verbose) {
+      console.log(`${repoName} format write ${formatWriteRes.ok ? "passed" : "failed"}`);
+    }
   }
   const checkCommand = resolveRepoCheckCommand(repoName, dir);
   const checkRes = await recordCommandCheck(
