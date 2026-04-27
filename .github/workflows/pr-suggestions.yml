@@ -23,11 +23,15 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issue_number = context.payload.pull_request.number;
+            const mergedBy = context.payload.pull_request.merged_by?.login;
+            const prAuthor = context.payload.pull_request.user?.login;
+            const pingUser = mergedBy || prAuthor;
             const compareUrl = `https://github.com/${owner}/${repo}/compare/main...release?expand=1`;
             const body = [
               "## Release back-merge reminder",
               "",
               "This PR merged into `release`.",
+              pingUser ? `@${pingUser} please open/update the back-merge PR from \`release\` to \`main\`.` : "Please open/update the back-merge PR from `release` to `main`.",
               "",
               `Open this compare view to create/update the back-merge PR: ${compareUrl}`,
             ].join("\n");
