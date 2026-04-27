@@ -277,6 +277,15 @@ checkout_submodule_main() {
   git -C "$WORK_DIR" submodule foreach --recursive 'git switch main'
 }
 
+# Set pull behavior to merge (not rebase) in workspace and each submodule.
+configure_pull_behavior() {
+  log "Configuring git pull behavior"
+  step "Setting pull.rebase=false in workspace root..."
+  git -C "$WORK_DIR" config pull.rebase false
+  step "Setting pull.rebase=false in each submodule..."
+  git -C "$WORK_DIR" submodule foreach --recursive 'git config pull.rebase false'
+}
+
 # Install JavaScript dependencies, enabling pnpm via Corepack when necessary.
 install_dependencies() {
   [ "$INSTALL_DEPS" -eq 1 ] || return 0
@@ -355,6 +364,7 @@ main() {
   check_target_dir
   clone_workspace
   checkout_submodule_main
+  configure_pull_behavior
   install_dependencies
   publish_workspace
   remove_downloaded_helper

@@ -11,7 +11,7 @@ on:
 
 jobs:
   workspace:
-    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'preflight' }}
+    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || contains(fromJSON('["preflight","ci","tests"]'), github.event.label.name) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -128,3 +128,30 @@ jobs:
             pylon/coverage
             scripts/coverage
           if-no-files-found: error
+
+  clear-rerun-label:
+    if: ${{ github.event_name == 'pull_request' && needs.workspace.result == 'success' && (contains(github.event.pull_request.labels.*.name, 'ci') || contains(github.event.pull_request.labels.*.name, 'tests')) }}
+    needs: [workspace]
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Remove consumed rerun labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PACKAGES_PAT || github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.pull_request.number;
+            for (const name of ["ci", "tests"]) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning("Skipping rerun-label cleanup due to token permissions (403).");
+                  return;
+                }
+                if (error.status !== 404) throw error;
+              }
+            }
