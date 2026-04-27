@@ -1226,6 +1226,57 @@ function resolveRepoFormatWriteCommand(repoName, dir) {
   return `${process.execPath} ${JSON.stringify(coreLintCliPath)} format --write${extraArgs}`;
 }
 
+function shouldAutoRunFormatFix(checkResult) {
+  const output = `${checkResult?.stdout || ""}\n${checkResult?.stderr || ""}`;
+  return /Code style issues found/i.test(output);
+}
+
+async function runCheckWithAutoFormatFix(
+  summary,
+  failures,
+  {
+    checkName,
+    checkCommand,
+    checkCwd,
+    formatStepName = "",
+    formatCommand = "",
+    formatCwd = checkCwd,
+    options = {},
+  }
+) {
+  const checksBefore = summary.checks.length;
+  const failuresBefore = failures.length;
+  let checkRes = await recordCommandCheck(summary, failures, checkName, checkCommand, checkCwd, options);
+  if (checkRes.ok || !formatCommand || !shouldAutoRunFormatFix(checkRes)) {
+    return { checkRes, autoFixed: false, formatRes: null };
+  }
+
+  summary.autoFormatRetries = Number(summary.autoFormatRetries || 0) + 1;
+  console.log(`${checkName}: formatting issue detected; running auto-fix and retrying check.`);
+  const formatRes = await recordCommandCheck(
+    summary,
+    failures,
+    formatStepName || `${checkName} format write`,
+    formatCommand,
+    formatCwd,
+    options
+  );
+  if (!formatRes.ok) {
+    return { checkRes, autoFixed: false, formatRes };
+  }
+
+  const retryRes = await recordCommandCheck(summary, failures, checkName, checkCommand, checkCwd, options);
+  if (!retryRes.ok) {
+    return { checkRes: retryRes, autoFixed: false, formatRes };
+  }
+
+  summary.autoFormatFixes = Number(summary.autoFormatFixes || 0) + 1;
+  // Remove first failed check attempt and its transient failure record.
+  summary.checks.splice(checksBefore, 1);
+  failures.splice(failuresBefore, 1);
+  return { checkRes: retryRes, autoFixed: true, formatRes };
+}
+
 function ensureRepoExists(repoName) {
   const dir = repoDir(repoName);
   if (!fs.existsSync(dir)) {
@@ -1318,16 +1369,25 @@ async function runWorkspaceChecks(options, summary, failures) {
     durationMs: submoduleRes.durationMs,
   });
   printSubmoduleSummaryFromOutput(`${submoduleRes.stdout}\n${submoduleRes.stderr}`);
-  const rootRes = await recordCommandCheck(
-    summary,
-    failures,
-    "workspace root check",
-    "pnpm run check:workspace-root",
-    ROOT,
-    options
-  );
+  const { checkRes: rootRes, autoFixed: workspaceAutoFixed, formatRes: workspaceFormatRes } =
+    await runCheckWithAutoFormatFix(summary, failures, {
+      checkName: "workspace root check",
+      checkCommand: "pnpm run check:workspace-root",
+      checkCwd: ROOT,
+      formatStepName: "workspace root format write",
+      formatCommand: "pnpm run format:write:workspace-root",
+      formatCwd: ROOT,
+      options,
+    });
+  if (workspaceFormatRes) {
+    repoReport.steps.push({
+      stepName: "root format write",
+      status: workspaceFormatRes.ok ? "passed" : "failed",
+      durationMs: workspaceFormatRes.durationMs,
+    });
+  }
   repoReport.steps.push({
-    stepName: "root check",
+    stepName: workspaceAutoFixed ? "root check (auto-fixed formatting)" : "root check",
     status: rootRes.ok ? "passed" : "failed",
     durationMs: rootRes.durationMs,
   });
@@ -1514,16 +1574,24 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     }
   }
   const checkCommand = resolveRepoCheckCommand(repoName, dir);
-  const checkRes = await recordCommandCheck(
-    summary,
-    failures,
-    `${repoName} check`,
+  const { checkRes, autoFixed, formatRes } = await runCheckWithAutoFormatFix(summary, failures, {
+    checkName: `${repoName} check`,
     checkCommand,
-    dir,
-    { ...options, heartbeat: true, parseCoreLintCheckSteps: true }
-  );
+    checkCwd: dir,
+    formatStepName: `${repoName} format write`,
+    formatCommand: formatWriteCommand,
+    formatCwd: dir,
+    options: { ...options, heartbeat: true, parseCoreLintCheckSteps: true },
+  });
+  if (formatRes) {
+    repoReport.steps.push({
+      stepName: "format write (auto-fix retry)",
+      status: formatRes.ok ? "passed" : "failed",
+      durationMs: formatRes.durationMs,
+    });
+  }
   repoReport.steps.push({
-    stepName: "check",
+    stepName: autoFixed ? "check (auto-fixed formatting)" : "check",
     status: checkRes.ok ? "passed" : "failed",
     durationMs: checkRes.durationMs,
   });
@@ -1609,6 +1677,8 @@ async function main() {
     },
     testNameIndexCache: {},
     bumpApplied: false,
+    autoFormatRetries: 0,
+    autoFormatFixes: 0,
   };
   const failures = summary.failures;
 
@@ -1730,6 +1800,8 @@ async function main() {
         : "none",
     ],
     ["failures", String(failures.length)],
+    ["auto-format retries", String(summary.autoFormatRetries || 0)],
+    ["auto-format fixes applied", String(summary.autoFormatFixes || 0)],
     ["bump applied", summary.bump === "none" ? "n/a" : summary.bumpApplied ? "yes" : "no"],
   ];
   printSimpleTable(["field", "value"], summaryRows);
@@ -1764,6 +1836,11 @@ async function main() {
         : "-",
     ]);
     printSimpleTable(["status", "repo", "exit", "command", "test", "file"], rows);
+  }
+  if (summary.autoFormatRetries > 0) {
+    console.log(
+      `${colorizeLabel("warn", "AUTO-FORMAT")} retries ${summary.autoFormatRetries} | fixes applied ${summary.autoFormatFixes}`
+    );
   }
   if (args.summaryJson) {
     const summaryPayload = {
