@@ -131,5 +131,8 @@ See:
 - [docs/notes/naming-map.md](docs/notes/naming-map.md) for shared file-prefix naming conventions
 - [docs/runbooks/release-preflight.md](docs/runbooks/release-preflight.md) for the one-command release preflight workflow
 
+5/20/2026
+<img width="1096" height="355" alt="image" src="https://github.com/user-attachments/assets/673af168-0d99-45c3-bac5-64b3853c8def" />
+
 4/25/2026
 <img width="1081" height="364" alt="image" src="https://github.com/user-attachments/assets/e6595493-cd62-4622-91e4-9b0414b95d5c" />
