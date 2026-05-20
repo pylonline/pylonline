@@ -1327,6 +1327,10 @@ function repoDir(repoName) {
 
 function resolveCoreUiPrepareCommand(repoName, options) {
   const dir = repoDir(repoName);
+  const workspaceCoreUi = path.join(ROOT, "core-ui");
+  if (fs.existsSync(path.join(workspaceCoreUi, "package.json"))) {
+    return `node scripts/prepare-core-ui.cjs --source local --path ${JSON.stringify(workspaceCoreUi)}`;
+  }
   if (options.coreUiConsumerSource === "repo-main") {
     const ref = String(options.coreUiConsumerRef || "main").trim() || "main";
     return `node scripts/prepare-core-ui.cjs --source remote --path ../core-ui --ref ${ref}`;
@@ -1692,36 +1696,35 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   });
 
   if (repoName === "portal" || repoName === "pylon") {
-    if (!summary.coreUiSyncBootstrapRepos.has(repoName)) {
-      const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
-      const prepRes = await recordCommandCheck(
-        summary,
-        failures,
-        `${repoName} core-ui prepare`,
-        prepCommand,
-        dir,
-        options
-      );
-      repoReport.steps.push({
-        stepName: "core-ui prepare",
-        status: prepRes.ok ? "passed" : "failed",
-        durationMs: prepRes.durationMs,
-      });
-      const syncRes = await recordCommandCheck(
-        summary,
-        failures,
-        `${repoName} ui sync`,
-        resolveRepoNpmScriptCommand(dir, "ui:sync", "npm run ui:sync"),
-        dir,
-        options
-      );
-      repoReport.steps.push({
-        stepName: "ui sync",
-        status: syncRes.ok ? "passed" : "failed",
-        durationMs: syncRes.durationMs,
-      });
-      summary.coreUiSyncBootstrapRepos.add(repoName);
-    }
+    // npm ci/install restores registry @pylonline/core-ui over any earlier prepare; always re-prepare + sync.
+    const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
+    const prepRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} core-ui prepare`,
+      prepCommand,
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "core-ui prepare",
+      status: prepRes.ok ? "passed" : "failed",
+      durationMs: prepRes.durationMs,
+    });
+    const syncRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} ui sync`,
+      resolveRepoNpmScriptCommand(dir, "ui:sync", "npm run ui:sync"),
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "ui sync",
+      status: syncRes.ok ? "passed" : "failed",
+      durationMs: syncRes.durationMs,
+    });
+    summary.coreUiSyncBootstrapRepos.add(repoName);
   }
 
   if (!options.verbose) {
