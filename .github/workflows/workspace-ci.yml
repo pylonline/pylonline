@@ -95,27 +95,17 @@ jobs:
           pnpm --filter @pylonline/portal --fail-if-no-match run ui:sync
           pnpm --filter @pylonline/portal --fail-if-no-match run check
 
-      - name: Check pylon
-        # pylon/package.json#L10-L27
-        #   core-ui:prepare -> scripts/prepare-core-ui.cjs
-        #   ui:sync         -> scripts/sync-core-ui.cjs
-        #   check           -> core-lint check using pylon/core-lint.config.cjs
-        # pylon/core-lint.config.cjs#L3-L25 also adds ui:check as a repo-specific check.
-        run: |
-          pnpm --filter @pylonline/pylon --fail-if-no-match run core-ui:prepare
-          pnpm --filter @pylonline/pylon --fail-if-no-match run ui:sync
-          pnpm --filter @pylonline/pylon --fail-if-no-match run check
+      # Pylon submodule is scaffold-only (no scripts/, app/, tests/) — skip until local runtime lands.
 
       - name: Unit tests (workspace aggregate)
-        # package.json root test script delegates to child repos with test scripts,
-        # including scripts/, portal/, pylon/, core-lint/, and core-ui/.
-        run: pnpm run test
+        # Excludes @pylonline/pylon until app/scripts/tests are checked in.
+        run: pnpm -r --if-present --filter '!@pylonline/pylon' run test
 
       - name: Coverage (workspace aggregate)
         # package.json#L10-L14 now includes workspace-level coverage orchestration.
         # Each repo writes c8 output into its own coverage/ directory and prints a
         # text summary to the job log.
-        run: pnpm run coverage
+        run: pnpm -r --if-present --filter '!@pylonline/pylon' run coverage
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
@@ -125,7 +115,6 @@ jobs:
             core-lint/coverage
             core-ui/coverage
             portal/coverage
-            pylon/coverage
             scripts/coverage
           if-no-files-found: error
 
