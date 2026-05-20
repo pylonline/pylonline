@@ -123,12 +123,12 @@ pnpm run lint
 See:
 
 - [docs/README.md](docs/README.md) for the docs index and runbook entry points
-- [docs/repo-map.md](docs/repo-map.md) for repo responsibilities and conventions
-- [docs/notes/local-workspace-layout.md](docs/notes/local-workspace-layout.md) for parent-folder layout guidance
-- [docs/notes/fast-clone.md](docs/notes/fast-clone.md) for faster clone and submodule checkout guidance
-- [docs/notes/workspace-ci-and-shared-ui.md](docs/notes/workspace-ci-and-shared-ui.md) for CI, shared-package, and generated-bundle behavior
-- [docs/notes/config-layout.md](docs/notes/config-layout.md) for the root-stub plus `config/` folder pattern
-- [docs/notes/naming-map.md](docs/notes/naming-map.md) for shared file-prefix naming conventions
+- [docs/architecture/repo-map.md](docs/architecture/repo-map.md) for per-repo folder map and responsibilities
+- [docs/architecture/workspace-packages.md](docs/architecture/workspace-packages.md) for workspace CI and package consumption
+- [docs/architecture/local-workspace-layout.md](docs/architecture/local-workspace-layout.md) for parent-folder layout guidance
+- [docs/architecture/workspace-packages.md](docs/architecture/workspace-packages.md) for CI, shared packages, and generated-bundle behavior
+- [docs/architecture/config-and-core-lint.md](docs/architecture/config-and-core-lint.md) for the `config/` folder and `core-lint` pattern
+- [docs/architecture/naming-conventions.md](docs/architecture/naming-conventions.md) for shared file-prefix naming conventions
 - [docs/runbooks/release-preflight.md](docs/runbooks/release-preflight.md) for the one-command release preflight workflow
 
 4/25/2026
