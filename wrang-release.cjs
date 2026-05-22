@@ -1329,11 +1329,11 @@ function resolveCoreUiPrepareCommand(repoName, options) {
   const dir = repoDir(repoName);
   const workspaceCoreUi = path.join(ROOT, "core-ui");
   if (fs.existsSync(path.join(workspaceCoreUi, "package.json"))) {
-    return `node scripts/prepare-core-ui.cjs --source local --path ${JSON.stringify(workspaceCoreUi)}`;
+    return `node scripts/core-ui/prepare-core-ui.cjs --source local --path ${JSON.stringify(workspaceCoreUi)}`;
   }
   if (options.coreUiConsumerSource === "repo-main") {
     const ref = String(options.coreUiConsumerRef || "main").trim() || "main";
-    return `node scripts/prepare-core-ui.cjs --source remote --path ../core-ui --ref ${ref}`;
+    return `node scripts/core-ui/prepare-core-ui.cjs --source remote --path ../core-ui --ref ${ref}`;
   }
   return resolveRepoNpmScriptCommand(dir, "core-ui:prepare", "npm run core-ui:prepare");
 }

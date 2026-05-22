@@ -86,8 +86,8 @@ jobs:
 
       - name: Check portal
         # portal/package.json#L31-L36
-        #   core-ui:prepare -> scripts/prepare-core-ui.cjs
-        #   ui:sync         -> scripts/sync-core-ui.cjs
+        #   core-ui:prepare -> scripts/core-ui/prepare-core-ui.cjs
+        #   ui:sync         -> scripts/core-ui/sync-core-ui.cjs
         #   check           -> core-lint check using portal/core-lint.config.cjs
         # portal/core-lint.config.cjs#L3-L26 also adds ui:check as a repo-specific check.
         run: |
