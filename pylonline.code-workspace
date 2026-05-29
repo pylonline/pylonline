@@ -1,0 +1,24 @@
+{
+  "folders": [
+    { "path": ".", "name": "pylonline" },
+    { "path": "core-ui", "name": "core-ui" },
+    { "path": "portal", "name": "portal" },
+    { "path": "pylon", "name": "pylon" },
+    { "path": "core-lint", "name": "core-lint" },
+    { "path": "docs", "name": "docs" },
+    { "path": "scripts", "name": "scripts" }
+  ],
+  "settings": {
+    "files.autoSave": "onFocusChange",
+    "git.autoRepositoryDetection": "subFolders",
+    "git.detectSubmodules": true,
+    "files.exclude": {
+      "**/node_modules": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.generated": true,
+      "pnpm-lock.yaml": true
+    }
+  }
+}
