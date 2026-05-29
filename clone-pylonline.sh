@@ -244,7 +244,6 @@ clone_workspace() {
   step "Cloning root repository..."
 
   git clone \
-    --depth=1 \
     --filter=blob:none \
     --no-recurse-submodules \
     "$CLONE_URL" \
@@ -277,9 +276,7 @@ clone_submodules() {
 
     git -C "$WORK_DIR" submodule update \
       --init \
-      --depth=1 \
       --filter=blob:none \
-      --recommend-shallow \
       -- "$path"
   done < <(git -C "$WORK_DIR" config -f .gitmodules --get-regexp '^submodule\..*\.path$')
 }
@@ -293,15 +290,12 @@ checkout_submodule_main() {
   git -C "$WORK_DIR" submodule foreach --recursive 'git switch main'
 }
 
-# Widen the fetch refspec and fetch every remote branch in the workspace and
-# each submodule. Shallow/--depth clones imply single-branch, so by default only
-# main would be visible. This keeps the clone shallow (branch-tips only) while
-# making all remote branches available for checkout.
-#
-# The fetch uses --depth=1 --no-tags so each branch arrives as a self-contained
-# shallow pack: this avoids the partial-clone (--filter=blob:none) lazy backfill
-# that can fail with "not our ref / could not fetch ... from promisor remote"
-# when a delta base or auto-followed tag points at an unreachable object.
+# Ensure every remote branch is present in the workspace and each submodule.
+# The clone is no longer shallow, so it already fetches all branches with full
+# history; submodule clone behavior can vary by git version, so this widens the
+# refspec and fetches as a safety net. Full history (no --depth) is what keeps
+# branches mergeable: a shallow clone has no common ancestor, which makes
+# `git merge`/`git pull` fail with "refusing to merge unrelated histories".
 #
 # This step is best-effort: the main clone has already succeeded by now, so a
 # branch-fetch hiccup only warns instead of aborting the whole install.
@@ -313,7 +307,7 @@ fetch_all_branches() {
   log "Fetching all remote branches"
   step "Widening refspec and fetching in workspace root..."
   git -C "$WORK_DIR" config remote.origin.fetch "$all_refspec"
-  if ! git -C "$WORK_DIR" fetch --depth=1 --no-tags origin; then
+  if ! git -C "$WORK_DIR" fetch origin; then
     note "Warning: could not fetch all branches in workspace root."
     note "  The main checkout is fine; retry later with: git fetch origin"
   fi
@@ -321,7 +315,7 @@ fetch_all_branches() {
   step "Widening refspec and fetching in each submodule..."
   git -C "$WORK_DIR" submodule foreach --recursive '
     git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-    if ! git fetch --depth=1 --no-tags origin; then
+    if ! git fetch origin; then
       echo "Warning: could not fetch all branches in $name."
       echo "  The main checkout is fine; retry later with: git fetch origin"
     fi
