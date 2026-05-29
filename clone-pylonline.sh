@@ -24,6 +24,7 @@ SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 CLONE_URL="$REPO_HTTPS_URL"
 INSTALL_DEPS=1
 CHECKOUT_MAIN=1
+FETCH_ALL_BRANCHES=1
 SCRIPT_START_EPOCH_MS="$(date +%s%3N)"
 
 SEPARATOR="------------------------------------------------------------"
@@ -42,6 +43,7 @@ Options:
   --https            Clone with https://github.com/pylonline/pylonline.git
   --no-deps          Skip pnpm install after clone
   --pinned           Keep submodules at pinned commits instead of switching to main
+  --single-branch    Only fetch main; skip fetching all remote branches
   -h, --help         Show this help
 
 Environment:
@@ -126,6 +128,10 @@ parse_args() {
         ;;
       --pinned)
         CHECKOUT_MAIN=0
+        shift
+        ;;
+      --single-branch)
+        FETCH_ALL_BRANCHES=0
         shift
         ;;
       -h | --help)
@@ -287,6 +293,23 @@ checkout_submodule_main() {
   git -C "$WORK_DIR" submodule foreach --recursive 'git switch main'
 }
 
+# Widen the fetch refspec and fetch every remote branch in the workspace and
+# each submodule. Shallow/--depth clones imply single-branch, so by default only
+# main would be visible. This keeps the clone shallow (branch tips only) while
+# making all remote branches available for checkout.
+fetch_all_branches() {
+  [ "$FETCH_ALL_BRANCHES" -eq 1 ] || return 0
+
+  log "Fetching all remote branches"
+  step "Widening refspec and fetching in workspace root..."
+  git -C "$WORK_DIR" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+  git -C "$WORK_DIR" fetch origin
+
+  step "Widening refspec and fetching in each submodule..."
+  git -C "$WORK_DIR" submodule foreach --recursive \
+    'git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" && git fetch origin'
+}
+
 # Set pull behavior to merge (not rebase) in workspace and each submodule.
 configure_pull_behavior() {
   log "Configuring git pull behavior"
@@ -374,6 +397,7 @@ main() {
   check_target_dir
   clone_workspace
   checkout_submodule_main
+  fetch_all_branches
   configure_pull_behavior
   install_dependencies
   publish_workspace
