@@ -148,7 +148,17 @@ parse_args() {
 # Show authentication setup guidance before any network operation starts.
 explain_auth() {
   log "GitHub access checklist"
-  note "This workspace uses private GitHub submodules. If the clone fails, review these access steps before retrying."
+  note "This workspace uses private GitHub submodules under the pylonline organization."
+  note "Org home: https://github.com/pylonline"
+  note "Workspace repo: https://github.com/pylonline/pylonline"
+  note ""
+  note "Before cloning, confirm your GitHub account can read private repos in the pylonline org."
+  note "If the clone fails, review these access steps before retrying."
+  note ""
+  note "Organization access:"
+  note "  - Ask an org owner for membership, or use credentials that already have access."
+  note "  - If the org uses SAML SSO, authorize your token or SSH key for the pylonline org:"
+  note "    https://github.com/settings/keys (SSH) or https://github.com/settings/tokens (PAT)"
   note ""
   note "Recommended SSH setup:"
   note "  1. Create a key if needed:"
@@ -164,11 +174,17 @@ explain_auth() {
   note "     ./clone-pylonline.sh --ssh"
   note ""
   note "HTTPS fallback:"
-  note "  Create a GitHub Personal Access Token with read access to the pylonline repositories."
+  note "  Create a GitHub Personal Access Token with repo read access to the pylonline org."
+  note "  Classic PAT: enable the repo scope. Fine-grained PAT: grant read access to pylonline repos."
   note "  Use your GitHub username when prompted and the token as the password."
   note "  GitHub token page: https://github.com/settings/tokens"
   note "  Optional local credential helper:"
   note "     git config --global credential.helper store"
+  note ""
+  note "GitHub CLI:"
+  note "  gh auth login -h github.com"
+  note "  gh auth setup-git -h github.com"
+  note "  If submodule clone still fails, refresh scopes: gh auth refresh -h github.com -s repo,read:org"
 }
 
 # Verify or optionally bootstrap SSH auth when the user selected --ssh.
@@ -198,6 +214,7 @@ setup_gh_auth() {
 
   if gh auth status -h github.com >/dev/null 2>&1; then
     note "GitHub CLI is already authenticated."
+    gh auth setup-git -h github.com >/dev/null 2>&1 || true
     return 0
   fi
 

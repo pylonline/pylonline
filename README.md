@@ -2,6 +2,28 @@
 
 This repository is the workspace and orchestration layer for the Pylonline codebase.
 
+Child repos (`core-ui`, `portal`, `pylon`, and the rest) live in the
+[`pylonline` GitHub organization](https://github.com/pylonline). The public
+[`pylonline/pylonline`](https://github.com/pylonline/pylonline) repo is the
+workspace orchestrator; product code stays in the private submodule repos.
+
+## GitHub access
+
+Before cloning, make sure your GitHub account can read the private repos in the
+`pylonline` organization:
+
+- You must be a member of the `pylonline` org, or use a token/SSH key with access
+  to its private repositories.
+- If the org uses SAML SSO, authorize your Personal Access Token or SSH key for
+  the `pylonline` org after creating it
+  ([SSO authorization](https://docs.github.com/en/enterprise-cloud@latest/authentication/authenticating-with-saml-single-sign-on/authorizing-a-personal-access-token-for-use-with-saml-single-sign-on)).
+- Workspace CI uses a `PACKAGES_PAT` secret with the same org access for
+  submodule checkout and GitHub Packages.
+
+The [`pylonline` org profile](https://github.com/pylonline) does not need its
+own README for cloning to work. Optional later: add an org profile README via a
+`pylonline/.github` repository.
+
 ## How to Clone
 
 Download and run the installer from this repo:
@@ -24,6 +46,13 @@ If you prefer SSH:
 
 ```bash
 ./clone-pylonline.sh --ssh
+```
+
+After cloning, open the multi-root workspace in Cursor or VS Code:
+
+```bash
+cursor pylonline.code-workspace
+# or: code pylonline.code-workspace
 ```
 
 It uses Git submodules to pin the active child-repo commits for coordinated development and verification.
