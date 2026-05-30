@@ -185,6 +185,12 @@ explain_auth() {
   note "  gh auth login -h github.com"
   note "  gh auth setup-git -h github.com"
   note "  If submodule clone still fails, refresh scopes: gh auth refresh -h github.com -s repo,read:org"
+  note ""
+  note "GitHub Packages (portal/pylon dev after clone):"
+  note "  Consumer repos install @pylonline/core-ui and @pylonline/core-lint from npm.pkg.github.com."
+  note "  If npm install fails inside portal or pylon, add a PAT with read:packages to ~/.npmrc:"
+  note "    @pylonline:registry=https://npm.pkg.github.com"
+  note "    //npm.pkg.github.com/:_authToken=<token>"
 }
 
 # Verify or optionally bootstrap SSH auth when the user selected --ssh.
@@ -387,6 +393,9 @@ publish_workspace() {
   )
   rmdir "$WORK_DIR"
   WORK_DIR=""
+
+  step "Syncing submodule remotes..."
+  git -C "$TARGET_DIR" submodule sync --recursive
 }
 
 # Remove the one-off downloaded helper while keeping the tracked copy in repos.
@@ -434,6 +443,14 @@ main() {
 
   log "Done"
   note "Workspace installed at: $TARGET_DIR"
+  note ""
+  note "Next steps:"
+  note "  cd $TARGET_DIR"
+  note "  cursor pylonline.code-workspace    # or: code pylonline.code-workspace"
+  note "  pnpm run submodules:status"
+  note ""
+  note "Before portal dev or deploy:"
+  note "  cd portal && npm run core-ui:prepare && npm run ui:sync"
   print_total_runtime
 }
 

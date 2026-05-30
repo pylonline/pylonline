@@ -90,15 +90,24 @@ pylonline/
 
 ## Bootstrap
 
-1. Clone the workspace repo with parallel, shallow submodules.
-2. Initialize submodules.
-3. Install workspace dependencies with `pnpm`.
+Preferred first-time setup:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pylonline/pylonline/main/clone-pylonline.sh -o clone-pylonline.sh
+chmod +x clone-pylonline.sh
+./clone-pylonline.sh
+cursor pylonline.code-workspace
+```
+
+The clone helper fetches full history (no shallow clone) so branches stay mergeable,
+initializes submodules under the `pylonline` org, switches them to `main`, and runs
+`pnpm install`.
+
+Manual bootstrap (same org URLs as `.gitmodules`):
 
 ```bash
 git clone \
   --recurse-submodules \
-  --shallow-submodules \
-  --depth=1 \
   --filter=blob:none \
   --jobs=8 \
   https://github.com/pylonline/pylonline.git
@@ -107,29 +116,26 @@ git submodule foreach --recursive 'git switch main'
 pnpm install
 ```
 
-The `--jobs=8` flag fetches submodules in parallel. The `--depth=1`,
-`--shallow-submodules`, and `--filter=blob:none` flags keep the initial clone
-small and fetch deeper history or file blobs only when needed.
+The `--jobs=8` flag fetches submodules in parallel. The `--filter=blob:none` flag
+keeps the initial clone smaller and fetches file blobs on demand.
 Recursive submodule clone checks out the recorded commits first; the
 `git submodule foreach` step switches each initialized child repo to its local
 `main` branch for day-to-day work.
 
-If you need full Git history for release archaeology, bisecting, or older
-submodule commits, clone without the shallow flags.
+If the repo is already cloned:
+
+```bash
+git submodule sync --recursive
+git submodule update --init --recursive --jobs=8
+pnpm run submodules:checkout-main
+pnpm install
+```
 
 ## CI Notes
 
 - Workspace CI in this repo requires a `PACKAGES_PAT` Actions secret.
 - That token must be able to read private GitHub repos and GitHub Packages for the `pylonline` org.
 - The workspace repo itself can stay public without exposing private child-repo code. A public clone only sees submodule pointers and metadata unless the user has access to the private repos.
-
-If the repo is already cloned:
-
-```bash
-git submodule update --init --recursive --depth=1 --jobs=8
-pnpm run submodules:checkout-main
-pnpm install
-```
 
 ## Common Commands
 
