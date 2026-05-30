@@ -159,9 +159,8 @@ See:
 
 - [docs/README.md](docs/README.md) for the docs index and runbook entry points
 - [docs/architecture/repo-map.md](docs/architecture/repo-map.md) for per-repo folder map and responsibilities
-- [docs/architecture/workspace-packages.md](docs/architecture/workspace-packages.md) for workspace CI and package consumption
+- [docs/architecture/workspace-packages.md](docs/architecture/workspace-packages.md) for workspace CI, package consumption, and generated-bundle behavior
 - [docs/architecture/local-workspace-layout.md](docs/architecture/local-workspace-layout.md) for parent-folder layout guidance
-- [docs/architecture/workspace-packages.md](docs/architecture/workspace-packages.md) for CI, shared packages, and generated-bundle behavior
 - [docs/architecture/config-and-core-lint.md](docs/architecture/config-and-core-lint.md) for the `config/` folder and `core-lint` pattern
 - [docs/architecture/naming-conventions.md](docs/architecture/naming-conventions.md) for shared file-prefix naming conventions
 - [docs/runbooks/release-preflight.md](docs/runbooks/release-preflight.md) for the one-command release preflight workflow
