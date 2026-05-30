@@ -1477,7 +1477,24 @@ function resolveRepoDependencyVersion(dir, packageName) {
     const pkg = readJson(pkgPath);
     const dev = pkg?.devDependencies || {};
     const deps = pkg?.dependencies || {};
-    return String(dev[packageName] || deps[packageName] || "").trim();
+    const raw = String(dev[packageName] || deps[packageName] || "").trim();
+    if (raw.startsWith("workspace:")) {
+      const siblingDir =
+        packageName === "@pylonline/core-lint"
+          ? "core-lint"
+          : packageName === "@pylonline/core-ui"
+            ? "core-ui"
+            : "";
+      if (siblingDir) {
+        const siblingPkgPath = path.join(ROOT, siblingDir, "package.json");
+        if (fs.existsSync(siblingPkgPath)) {
+          const siblingVersion = String(readJson(siblingPkgPath).version || "").trim();
+          if (siblingVersion) return siblingVersion;
+        }
+      }
+      return "";
+    }
+    return raw;
   } catch (_error) {
     return "";
   }

@@ -7,6 +7,7 @@ packages:
 
 linkWorkspacePackages: true
 preferWorkspacePackages: true
+saveWorkspaceProtocol: false
 
 overrides:
   is-arrayish: "0.2.1"
