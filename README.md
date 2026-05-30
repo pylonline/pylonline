@@ -50,10 +50,17 @@ If you prefer SSH:
 
 After cloning, open the multi-root workspace in Cursor or VS Code:
 
+**Local machine (GUI):**
+
 ```bash
+cd pylonline
 cursor pylonline.code-workspace
 # or: code pylonline.code-workspace
 ```
+
+**Remote SSH (e.g. home server):** the `cursor` / `code` CLI in an SSH session cannot
+talk to your desktop app. In Cursor on your local machine, connect via Remote SSH,
+then open `~/pylonline-workspace/pylonline/pylonline.code-workspace` (or your clone path).
 
 It uses Git submodules to pin the active child-repo commits for coordinated development and verification.
 
@@ -96,7 +103,9 @@ Preferred first-time setup:
 curl -fsSL https://raw.githubusercontent.com/pylonline/pylonline/main/clone-pylonline.sh -o clone-pylonline.sh
 chmod +x clone-pylonline.sh
 ./clone-pylonline.sh
-cursor pylonline.code-workspace
+cd pylonline
+# Local GUI: cursor pylonline.code-workspace
+# Remote SSH: open pylonline.code-workspace from Cursor Remote SSH on your desktop
 ```
 
 The clone helper fetches full history (no shallow clone) so branches stay mergeable,
