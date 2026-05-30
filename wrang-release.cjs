@@ -3,6 +3,7 @@
 
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
+const https = require("node:https");
 const path = require("node:path");
 
 const ROOT = __dirname;
@@ -963,6 +964,173 @@ function colorizeLabel(kind, text) {
   return `${greenBold}${text}${reset}`;
 }
 
+const PLAYWRIGHT_PACKAGE = "@playwright/test";
+const PLAYWRIGHT_CONSUMER_REPOS = ["portal", "pylon"];
+
+function parsePinnedSemverVersion(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const exact = text.match(/^(\d+\.\d+\.\d+)$/);
+  if (exact) return exact[1];
+  const fromRange = text.match(/(\d+\.\d+\.\d+)/);
+  return fromRange ? fromRange[1] : text.replace(/^[\^~>=<\s]+/, "");
+}
+
+function readRepoDevDependency(repoName, depName) {
+  const pkgPath = path.join(repoDir(repoName), "package.json");
+  if (!fs.existsSync(pkgPath)) return "";
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+    return parsePinnedSemverVersion(deps[depName]);
+  } catch (_error) {
+    return "";
+  }
+}
+
+function compareSemverParts(a, b) {
+  const toParts = (version) =>
+    String(version || "")
+      .trim()
+      .split(".")
+      .map((part) => parseInt(part, 10) || 0);
+  const left = toParts(a);
+  const right = toParts(b);
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const diff = (left[i] || 0) - (right[i] || 0);
+    if (diff !== 0) return diff < 0 ? -1 : 1;
+  }
+  return 0;
+}
+
+function fetchNpmLatestVersion(packageName, timeoutMs = 10_000) {
+  const result = spawnSync(`npm view ${JSON.stringify(packageName)} version`, {
+    cwd: ROOT,
+    shell: true,
+    encoding: "utf8",
+    stdio: "pipe",
+    timeout: timeoutMs,
+    env: buildPreflightChildEnv(),
+  });
+  if (result.error || result.status !== 0) return "";
+  return parsePinnedSemverVersion(String(result.stdout || "").trim());
+}
+
+function fetchLatestNodeVersionForMajor(major, timeoutMs = 10_000) {
+  return new Promise((resolve) => {
+    const request = https.get(
+      "https://nodejs.org/dist/index.json",
+      { timeout: timeoutMs },
+      (response) => {
+        if (response.statusCode && response.statusCode >= 400) {
+          response.resume();
+          resolve("");
+          return;
+        }
+        let body = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          body += chunk;
+        });
+        response.on("end", () => {
+          try {
+            const entries = JSON.parse(body);
+            const prefix = `v${major}.`;
+            const latest = entries.find((entry) =>
+              String(entry.version || "").startsWith(prefix)
+            );
+            resolve(parsePinnedSemverVersion(String(latest?.version || "").replace(/^v/, "")));
+          } catch (_error) {
+            resolve("");
+          }
+        });
+      }
+    );
+    request.on("timeout", () => {
+      request.destroy();
+      resolve("");
+    });
+    request.on("error", () => resolve(""));
+  });
+}
+
+function readWorkspaceNodeMajor() {
+  for (const repoName of ["portal", "pylon"]) {
+    const nvmrcPath = path.join(repoDir(repoName), ".nvmrc");
+    if (!fs.existsSync(nvmrcPath)) continue;
+    const major = String(fs.readFileSync(nvmrcPath, "utf8")).trim().split(".")[0];
+    if (/^\d+$/.test(major)) return major;
+  }
+  return "";
+}
+
+function playwrightAdvisoryRepos(targets) {
+  const inScope = new Set(targets);
+  return PLAYWRIGHT_CONSUMER_REPOS.filter((repoName) => {
+    if (!inScope.has(repoName)) return false;
+    if (repoName === "pylon" && !pylonPreflightEnabled()) return false;
+    return fs.existsSync(path.join(repoDir(repoName), "package.json"));
+  });
+}
+
+function formatPlaywrightAdvisoryLine(repoName, pinned, latest) {
+  const label = `${PLAYWRIGHT_PACKAGE} (${repoName})`;
+  if (!pinned) {
+    return `${label}: not pinned in package.json`;
+  }
+  if (!latest) {
+    return `${label}: pinned ${pinned}; latest on npm unavailable (offline or registry timeout)`;
+  }
+  if (compareSemverParts(pinned, latest) >= 0) {
+    return `${label}: pinned ${pinned} (matches latest on npm)`;
+  }
+  return `${label}: pinned ${pinned}; latest on npm is ${latest} — upgrade is optional`;
+}
+
+function formatNodeAdvisoryLine(running, expectedMajor, latest) {
+  const runningVersion = parsePinnedSemverVersion(running);
+  if (!expectedMajor) {
+    return `Node.js: running ${runningVersion || running}`;
+  }
+  if (!latest) {
+    return `Node.js: running ${runningVersion || running}; workspace .nvmrc ${expectedMajor}; latest Node ${expectedMajor} unavailable (offline or timeout)`;
+  }
+  if (compareSemverParts(runningVersion, latest) >= 0) {
+    return `Node.js: running ${runningVersion || running}; latest Node ${expectedMajor} is ${latest} (current)`;
+  }
+  return `Node.js: running ${runningVersion || running}; latest Node ${expectedMajor} is ${latest} — upgrade is optional`;
+}
+
+async function printPreflightToolingAdvisories(targets) {
+  const playwrightRepos = playwrightAdvisoryRepos(targets);
+  const expectedNodeMajor = readWorkspaceNodeMajor();
+  if (!expectedNodeMajor && !playwrightRepos.length) return;
+
+  printCenteredBanner("TOOLING ADVISORIES (informational)");
+  const lines = [];
+
+  if (expectedNodeMajor) {
+    const latestNode = await fetchLatestNodeVersionForMajor(expectedNodeMajor);
+    lines.push(formatNodeAdvisoryLine(process.version.slice(1), expectedNodeMajor, latestNode));
+  }
+
+  if (playwrightRepos.length) {
+    const playwrightLatest = fetchNpmLatestVersion(PLAYWRIGHT_PACKAGE);
+    for (const repoName of playwrightRepos) {
+      const pinned = readRepoDevDependency(repoName, PLAYWRIGHT_PACKAGE);
+      lines.push(formatPlaywrightAdvisoryLine(repoName, pinned, playwrightLatest));
+    }
+  }
+
+  for (const line of lines) {
+    const isOpportunity =
+      line.includes("latest on npm is ") ||
+      (line.includes("latest Node") && line.includes("upgrade is optional"));
+    console.log(isOpportunity ? colorizeLabel("warn", line) : line);
+  }
+  console.log("Advisories are informational only; pinned versions are not changed by preflight.");
+}
+
 function parseTapTests(output) {
   const text = String(output || "");
   const tests = [];
@@ -1916,6 +2084,8 @@ async function main() {
     `refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`
   );
   console.log(`verbose output: ${args.verbose ? "on" : "off"}`);
+
+  await printPreflightToolingAdvisories(targets);
 
   let pinResult = null;
   const pinStart = nowMs();
