@@ -7,8 +7,6 @@ settings:
 overrides:
   is-arrayish: 0.2.1
   tinyglobby: 0.2.16
-  '@pylonline/core-lint': workspace:*
-  '@pylonline/core-ui': workspace:*
 
 importers:
 
@@ -52,7 +50,7 @@ importers:
   core-ui:
     devDependencies:
       '@pylonline/core-lint':
-        specifier: workspace:*
+        specifier: ^0.1.0
         version: link:../core-lint
       c8:
         specifier: ^11.0.0
@@ -64,7 +62,7 @@ importers:
   portal:
     dependencies:
       '@pylonline/core-ui':
-        specifier: workspace:*
+        specifier: ^0.1.0
         version: link:../core-ui
       '@simplewebauthn/browser':
         specifier: ^13.2.2
@@ -86,7 +84,7 @@ importers:
         specifier: ^1.52.0
         version: 1.52.0
       '@pylonline/core-lint':
-        specifier: workspace:*
+        specifier: ^0.1.0
         version: link:../core-lint
       '@types/node':
         specifier: ^24.12.0
@@ -107,20 +105,20 @@ importers:
   pylon:
     dependencies:
       '@pylonline/core-ui':
-        specifier: workspace:*
+        specifier: ^0.1.0
         version: link:../core-ui
     devDependencies:
       '@playwright/test':
         specifier: 1.52.0
         version: 1.52.0
       '@pylonline/core-lint':
-        specifier: workspace:*
+        specifier: ^0.1.0
         version: link:../core-lint
 
   scripts:
     devDependencies:
       '@pylonline/core-lint':
-        specifier: workspace:*
+        specifier: ^0.1.0
         version: link:../core-lint
       c8:
         specifier: ^11.0.0

@@ -12,8 +12,6 @@ saveWorkspaceProtocol: false
 overrides:
   is-arrayish: "0.2.1"
   tinyglobby: "0.2.16"
-  "@pylonline/core-lint": "workspace:*"
-  "@pylonline/core-ui": "workspace:*"
 
 allowBuilds:
   esbuild: true
