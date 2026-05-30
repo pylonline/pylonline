@@ -41,6 +41,9 @@ jobs:
           node-version: "22"
 
       - name: Configure GitHub Packages auth
+        # PACKAGES_PAT is required for private submodule checkout. Workspace install links
+        # @pylonline/core-lint and @pylonline/core-ui from checked-out submodules (see
+        # pnpm-workspace.yaml overrides) — it does not download those packages from GitHub Packages.
         env:
           PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
         run: |
