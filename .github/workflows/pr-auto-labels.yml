@@ -24,6 +24,7 @@ jobs:
             const desiredLabels = [
               { name: "ut", color: "1D76DB", description: "[Pylon Line] Repository has unit test coverage and unit-test workflows." },
               { name: "ci", color: "0E8A16", description: "[Pylon Line] Repository has pull request CI workflows." },
+              { name: "perf", color: "FBCA04", description: "[Pylon Line] Re-run portal PR perf smoke (local wrangler load test)." },
             ];
 
             try {
