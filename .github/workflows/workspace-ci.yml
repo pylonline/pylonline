@@ -2,16 +2,32 @@ name: Workspace CI (Checks + Tests + Coverage)
 
 on:
   # PR validation is the canonical signal for merge readiness.
+  # Label reruns are dispatched via pr-label-rerun.yml (pull_request_target) because
+  # token-driven label changes do not re-trigger pull_request workflows.
   pull_request:
     branches:
       - main
       - release
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      trigger_label:
+        description: "Rerun scope (from label or manual)"
+        required: false
+        default: all
+        type: choice
+        options: [all, ci, ut, perf, preflight]
+      pr_number:
+        description: "PR number for label cleanup (set by pr-label-rerun)"
+        required: false
+        type: string
 
 jobs:
   workspace:
-    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || contains(fromJSON('["preflight","ci","ut"]'), github.event.label.name) }}
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+        || inputs.trigger_label == 'all'
+        || contains(fromJSON('["ci","ut","preflight"]'), inputs.trigger_label) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -122,7 +138,10 @@ jobs:
           if-no-files-found: error
 
   portal-perf-smoke:
-    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || contains(fromJSON('["preflight","ci","ut","perf"]'), github.event.label.name) }}
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+        || inputs.trigger_label == 'all'
+        || contains(fromJSON('["preflight","ci","ut","perf"]'), inputs.trigger_label) }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -219,11 +238,14 @@ jobs:
 
   clear-rerun-label:
     if: >-
-      ${{ always() && github.event_name == 'pull_request' && (
-        (needs.workspace.result == 'success' && needs.portal-perf-smoke.result == 'success'
-          && (contains(github.event.pull_request.labels.*.name, 'ci') || contains(github.event.pull_request.labels.*.name, 'ut')))
-        || (needs.portal-perf-smoke.result == 'success' && needs.workspace.result == 'skipped'
-          && contains(github.event.pull_request.labels.*.name, 'perf'))
+      ${{ always() && (
+        github.event_name == 'pull_request'
+        || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')
+      ) && (
+        needs.workspace.result == 'success'
+        || needs.workspace.result == 'skipped'
+        || needs.portal-perf-smoke.result == 'success'
+        || needs.portal-perf-smoke.result == 'skipped'
       ) }}
     needs: [workspace, portal-perf-smoke]
     runs-on: ubuntu-latest
@@ -237,18 +259,33 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const issue_number = context.payload.pull_request.number;
-            const labelNames = context.payload.pull_request.labels.map((label) => label.name);
+            const issue_number = context.payload.pull_request?.number
+              ?? Number("${{ inputs.pr_number }}");
+            if (!issue_number) {
+              core.info("No PR number available; skipping rerun-label cleanup.");
+              return;
+            }
+            const { data: issue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number,
+            });
+            const labelNames = issue.labels.map((label) => label.name);
             const workspaceOk = "${{ needs.workspace.result }}" === "success";
+            const workspaceSkipped = "${{ needs.workspace.result }}" === "skipped";
             const perfOk = "${{ needs.portal-perf-smoke.result }}" === "success";
+            const perfSkipped = "${{ needs.portal-perf-smoke.result }}" === "skipped";
             const toRemove = [];
             if (workspaceOk && perfOk) {
               if (labelNames.includes("ci")) toRemove.push("ci");
               if (labelNames.includes("ut")) toRemove.push("ut");
             }
-            if (perfOk && labelNames.includes("perf")) {
-              const workspaceSkipped = "${{ needs.workspace.result }}" === "skipped";
-              if (workspaceSkipped || workspaceOk) toRemove.push("perf");
+            if (perfOk && labelNames.includes("perf") && (workspaceSkipped || workspaceOk)) {
+              toRemove.push("perf");
+            }
+            if (toRemove.length === 0) {
+              core.info("No consumed rerun labels to remove on this PR.");
+              return;
             }
             for (const name of toRemove) {
               try {
