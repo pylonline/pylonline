@@ -1,0 +1,17 @@
+---
+description: Where to change UI/CSS/JS — avoid duplicating core-ui in portal
+alwaysApply: true
+---
+
+# UI ownership
+
+Before adding or changing UI (CSS, JS, HTML):
+
+1. Read **`docs/architecture/where-to-change-ui.md`** and search for existing classes, `aria-label`s, and helpers.
+2. **Shared** look/behavior → `core-ui/assets/css/template-contract/` and `core-ui/assets/js/template/`.
+3. **One route/page** → `portal/static/assets/css/route-overrides/` or `portal/static/assets/js/route-*`.
+4. **Table column layout** → only `core-ui/.../template-table-profiles.css` (by `table[aria-label]`). Do not duplicate in `template-support-records.css` or route-overrides.
+5. **Support inbox UI** (threads, badges, reply actions) → `template-support-records.css`, scoped to `table[aria-label="Support requests"]`.
+6. Extend contract tests in `portal/tests/unit/css/` when adding table profiles or moving CSS across tiers.
+
+Do not copy selector blocks to “make cascade work” — fix specificity or scoping instead (`:where()` utilities, scoped selectors).
