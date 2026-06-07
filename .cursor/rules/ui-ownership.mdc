@@ -7,7 +7,7 @@ alwaysApply: true
 
 Before adding or changing UI (CSS, JS, HTML):
 
-1. Read **`docs/architecture/where-to-change-ui.md`** and search for existing classes, `aria-label`s, and helpers.
+1. Read **`docs/architecture/ui/where-to-change-ui.md`** and search for existing classes, `aria-label`s, and helpers.
 2. **Shared** look/behavior → `core-ui/assets/css/template-contract/` and `core-ui/assets/js/template/`.
 3. **One route/page** → `portal/static/assets/css/route-overrides/` or `portal/static/assets/js/route-*`.
 4. **Table column layout** → only `core-ui/.../template-table-profiles.css` (by `table[aria-label]`). Do not duplicate in `template-support-records.css` or route-overrides.

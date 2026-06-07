@@ -2,11 +2,11 @@
 
 ## Workspace layout
 
-Multi-repo workspace (submodules). Per-repo folders: **[docs/architecture/repo-map.md](docs/architecture/repo-map.md)**.
+Multi-repo workspace (submodules). Per-repo folders: **[docs/architecture/workspace/repo-map.md](docs/architecture/workspace/repo-map.md)**.
 
 ## UI and frontend
 
-Start here: **[docs/architecture/where-to-change-ui.md](docs/architecture/where-to-change-ui.md)**
+Start here: **[docs/architecture/ui/where-to-change-ui.md](docs/architecture/ui/where-to-change-ui.md)**
 
 - **core-ui** — shared template contract (CSS, JS, HTML partials)
 - **portal** — product routes, API, route-specific CSS/JS overrides
@@ -15,7 +15,7 @@ Start here: **[docs/architecture/where-to-change-ui.md](docs/architecture/where-
 ## Backend and non-UI
 
 - **API, handlers, D1** → `portal/src/api/`, `portal/src/db/` (see [portal/README.md](portal/README.md))
-- **Shared lint/format config** → `core-lint`, [docs/architecture/config-and-core-lint.md](docs/architecture/config-and-core-lint.md)
+- **Shared lint/format config** → `core-lint`, [docs/architecture/workspace/config-and-core-lint.md](docs/architecture/workspace/config-and-core-lint.md)
 
 ## Architecture index
 
@@ -26,4 +26,4 @@ Start here: **[docs/architecture/where-to-change-ui.md](docs/architecture/where-
 ## Tests
 
 - After CSS boundary changes, run relevant unit tests under `portal/tests/unit/css/`.
-- Portal test matrix and commands: **[docs/runbooks/portal-test-plan.md](docs/runbooks/portal-test-plan.md)**; quick reference in [portal/README.md](portal/README.md) (`pnpm run test:unit`, `test:api`, `test:ui`).
+- Portal test matrix and commands: **[docs/runbooks/portal/portal-test-plan/](docs/runbooks/portal/portal-test-plan/)**; quick reference in [portal/README.md](portal/README.md) (`pnpm run test:unit`, `test:runtime`, `test:api`, `test:ui`).
