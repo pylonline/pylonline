@@ -2,16 +2,32 @@ name: Workspace CI (Checks + Tests + Coverage)
 
 on:
   # PR validation is the canonical signal for merge readiness.
+  # Label reruns are dispatched via pr-label-rerun.yml (pull_request_target) because
+  # token-driven label changes do not re-trigger pull_request workflows.
   pull_request:
     branches:
       - main
       - release
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      trigger_label:
+        description: "Rerun scope (from label or manual)"
+        required: false
+        default: all
+        type: choice
+        options: [all, ci, ut, perf, preflight]
+      pr_number:
+        description: "PR number for label cleanup (set by pr-label-rerun)"
+        required: false
+        type: string
 
 jobs:
   workspace:
-    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || contains(fromJSON('["preflight","ci","ut"]'), github.event.label.name) }}
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+        || inputs.trigger_label == 'all'
+        || contains(fromJSON('["ci","ut","preflight"]'), inputs.trigger_label) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -41,6 +57,9 @@ jobs:
           node-version: "22"
 
       - name: Configure GitHub Packages auth
+        # PACKAGES_PAT is required for private submodule checkout. Workspace install links
+        # @pylonline/core-lint and @pylonline/core-ui from checked-out submodules (see
+        # pnpm-workspace.yaml overrides) — it does not download those packages from GitHub Packages.
         env:
           PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
         run: |
@@ -118,9 +137,117 @@ jobs:
             scripts/coverage
           if-no-files-found: error
 
+  portal-perf-smoke:
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+        || inputs.trigger_label == 'all'
+        || contains(fromJSON('["preflight","ci","ut","perf"]'), inputs.trigger_label) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: portal
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PACKAGES_PAT }}
+          submodules: recursive
+
+      - name: Validate workspace secret
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PACKAGES_TOKEN}" ]; then
+            echo "::error::Missing PACKAGES_PAT in the pylonline workspace repo."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: portal/package-lock.json
+
+      - name: Configure GitHub Packages auth
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          {
+            echo "@pylonline:registry=https://npm.pkg.github.com"
+            echo "//npm.pkg.github.com/:_authToken=${PACKAGES_TOKEN}"
+            echo "always-auth=true"
+          } > ~/.npmrc
+
+      - name: Install portal dependencies
+        run: bash .github/scripts/npm-ci-retry.sh
+
+      - name: Install core-ui build deps
+        working-directory: core-ui
+        run: npm ci --no-audit --no-fund
+
+      - name: Prepare core-ui for wrangler bundling
+        run: npm run core-ui:prepare -- --path ../core-ui
+
+      - name: Verify core-ui sibling for build imports
+        run: test -f ../core-ui/pages/templates/shared/template-shared-modal-shell.html
+
+      - name: Sync shared UI
+        run: npm run ui:sync
+
+      - name: Apply local D1 migrations
+        run: npx wrangler d1 migrations apply portal_db --local
+
+      - name: Start local Worker
+        run: |
+          node scripts/dev/wrangler/start-wrangler-ci-background.cjs \
+            --port=8789 \
+            --host=127.0.0.1 \
+            --log=/tmp/portal-perf-smoke.log \
+            --pid=/tmp/portal-perf-smoke.pid
+
+      - name: Wait for local Worker
+        id: wait-for-worker
+        run: node scripts/dev/wrangler/wait-for-worker-http.cjs --url=http://127.0.0.1:8789/signin --timeout-ms=240000
+
+      - name: Show Worker log when wait fails
+        if: failure() && steps.wait-for-worker.outcome == 'failure'
+        run: |
+          echo "::group::wrangler dev log (tail)"
+          tail -n 150 /tmp/portal-perf-smoke.log || true
+          echo "::endgroup::"
+
+      - name: Run perf smoke checks
+        run: npm run perf:smoke:pr
+
+      - name: Stop local Worker
+        if: always()
+        run: node scripts/dev/wrangler/stop-wrangler-ci-background.cjs --pid=/tmp/portal-perf-smoke.pid
+
+      - name: Upload local Worker logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-portal-perf-smoke-log-${{ github.run_id }}
+          path: /tmp/portal-perf-smoke.log
+
   clear-rerun-label:
-    if: ${{ github.event_name == 'pull_request' && needs.workspace.result == 'success' && (contains(github.event.pull_request.labels.*.name, 'ci') || contains(github.event.pull_request.labels.*.name, 'ut')) }}
-    needs: [workspace]
+    if: >-
+      ${{ always() && (
+        github.event_name == 'pull_request'
+        || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')
+      ) && (
+        needs.workspace.result == 'success'
+        || needs.workspace.result == 'skipped'
+        || needs.portal-perf-smoke.result == 'success'
+        || needs.portal-perf-smoke.result == 'skipped'
+      ) }}
+    needs: [workspace, portal-perf-smoke]
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -132,8 +259,35 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const issue_number = context.payload.pull_request.number;
-            for (const name of ["ci", "ut"]) {
+            const issue_number = context.payload.pull_request?.number
+              ?? Number("${{ inputs.pr_number }}");
+            if (!issue_number) {
+              core.info("No PR number available; skipping rerun-label cleanup.");
+              return;
+            }
+            const { data: issue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number,
+            });
+            const labelNames = issue.labels.map((label) => label.name);
+            const workspaceOk = "${{ needs.workspace.result }}" === "success";
+            const workspaceSkipped = "${{ needs.workspace.result }}" === "skipped";
+            const perfOk = "${{ needs.portal-perf-smoke.result }}" === "success";
+            const perfSkipped = "${{ needs.portal-perf-smoke.result }}" === "skipped";
+            const toRemove = [];
+            if (workspaceOk && perfOk) {
+              if (labelNames.includes("ci")) toRemove.push("ci");
+              if (labelNames.includes("ut")) toRemove.push("ut");
+            }
+            if (perfOk && labelNames.includes("perf") && (workspaceSkipped || workspaceOk)) {
+              toRemove.push("perf");
+            }
+            if (toRemove.length === 0) {
+              core.info("No consumed rerun labels to remove on this PR.");
+              return;
+            }
+            for (const name of toRemove) {
               try {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
               } catch (error) {

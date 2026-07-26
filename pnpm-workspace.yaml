@@ -5,6 +5,10 @@ packages:
   - "pylon"
   - "scripts"
 
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+saveWorkspaceProtocol: false
+
 overrides:
   is-arrayish: "0.2.1"
   tinyglobby: "0.2.16"
