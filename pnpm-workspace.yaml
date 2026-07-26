@@ -4,3 +4,20 @@ packages:
   - "portal"
   - "pylon"
   - "scripts"
+
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+saveWorkspaceProtocol: false
+
+overrides:
+  is-arrayish: "0.2.1"
+  tinyglobby: "0.2.16"
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+
+minimumReleaseAgeExclude:
+  - miniflare@4.20260520.0
+  - wrangler@4.93.1

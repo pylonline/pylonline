@@ -24,6 +24,7 @@ SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 CLONE_URL="$REPO_HTTPS_URL"
 INSTALL_DEPS=1
 CHECKOUT_MAIN=1
+FETCH_ALL_BRANCHES=1
 SCRIPT_START_EPOCH_MS="$(date +%s%3N)"
 
 SEPARATOR="------------------------------------------------------------"
@@ -42,6 +43,7 @@ Options:
   --https            Clone with https://github.com/pylonline/pylonline.git
   --no-deps          Skip pnpm install after clone
   --pinned           Keep submodules at pinned commits instead of switching to main
+  --single-branch    Only fetch main; skip fetching all remote branches
   -h, --help         Show this help
 
 Environment:
@@ -128,6 +130,10 @@ parse_args() {
         CHECKOUT_MAIN=0
         shift
         ;;
+      --single-branch)
+        FETCH_ALL_BRANCHES=0
+        shift
+        ;;
       -h | --help)
         usage
         exit 0
@@ -142,7 +148,17 @@ parse_args() {
 # Show authentication setup guidance before any network operation starts.
 explain_auth() {
   log "GitHub access checklist"
-  note "This workspace uses private GitHub submodules. If the clone fails, review these access steps before retrying."
+  note "This workspace uses private GitHub submodules under the pylonline organization."
+  note "Org home: https://github.com/pylonline"
+  note "Workspace repo: https://github.com/pylonline/pylonline"
+  note ""
+  note "Before cloning, confirm your GitHub account can read private repos in the pylonline org."
+  note "If the clone fails, review these access steps before retrying."
+  note ""
+  note "Organization access:"
+  note "  - Ask an org owner for membership, or use credentials that already have access."
+  note "  - If the org uses SAML SSO, authorize your token or SSH key for the pylonline org:"
+  note "    https://github.com/settings/keys (SSH) or https://github.com/settings/tokens (PAT)"
   note ""
   note "Recommended SSH setup:"
   note "  1. Create a key if needed:"
@@ -158,11 +174,23 @@ explain_auth() {
   note "     ./clone-pylonline.sh --ssh"
   note ""
   note "HTTPS fallback:"
-  note "  Create a GitHub Personal Access Token with read access to the pylonline repositories."
+  note "  Create a GitHub Personal Access Token with repo read access to the pylonline org."
+  note "  Classic PAT: enable the repo scope. Fine-grained PAT: grant read access to pylonline repos."
   note "  Use your GitHub username when prompted and the token as the password."
   note "  GitHub token page: https://github.com/settings/tokens"
   note "  Optional local credential helper:"
   note "     git config --global credential.helper store"
+  note ""
+  note "GitHub CLI:"
+  note "  gh auth login -h github.com"
+  note "  gh auth setup-git -h github.com"
+  note "  If submodule clone still fails, refresh scopes: gh auth refresh -h github.com -s repo,read:org"
+  note ""
+  note "GitHub Packages (portal/pylon dev after clone):"
+  note "  Consumer repos install @pylonline/core-ui and @pylonline/core-lint from npm.pkg.github.com."
+  note "  If npm install fails inside portal or pylon, add a PAT with read:packages to ~/.npmrc:"
+  note "    @pylonline:registry=https://npm.pkg.github.com"
+  note "    //npm.pkg.github.com/:_authToken=<token>"
 }
 
 # Verify or optionally bootstrap SSH auth when the user selected --ssh.
@@ -192,6 +220,7 @@ setup_gh_auth() {
 
   if gh auth status -h github.com >/dev/null 2>&1; then
     note "GitHub CLI is already authenticated."
+    gh auth setup-git -h github.com >/dev/null 2>&1 || true
     return 0
   fi
 
@@ -238,7 +267,6 @@ clone_workspace() {
   step "Cloning root repository..."
 
   git clone \
-    --depth=1 \
     --filter=blob:none \
     --no-recurse-submodules \
     "$CLONE_URL" \
@@ -271,9 +299,7 @@ clone_submodules() {
 
     git -C "$WORK_DIR" submodule update \
       --init \
-      --depth=1 \
       --filter=blob:none \
-      --recommend-shallow \
       -- "$path"
   done < <(git -C "$WORK_DIR" config -f .gitmodules --get-regexp '^submodule\..*\.path$')
 }
@@ -285,6 +311,38 @@ checkout_submodule_main() {
   log "Switching submodules to main"
   step "Checking out main in each submodule..."
   git -C "$WORK_DIR" submodule foreach --recursive 'git switch main'
+}
+
+# Ensure every remote branch is present in the workspace and each submodule.
+# The clone is no longer shallow, so it already fetches all branches with full
+# history; submodule clone behavior can vary by git version, so this widens the
+# refspec and fetches as a safety net. Full history (no --depth) is what keeps
+# branches mergeable: a shallow clone has no common ancestor, which makes
+# `git merge`/`git pull` fail with "refusing to merge unrelated histories".
+#
+# This step is best-effort: the main clone has already succeeded by now, so a
+# branch-fetch hiccup only warns instead of aborting the whole install.
+fetch_all_branches() {
+  [ "$FETCH_ALL_BRANCHES" -eq 1 ] || return 0
+
+  local all_refspec='+refs/heads/*:refs/remotes/origin/*'
+
+  log "Fetching all remote branches"
+  step "Widening refspec and fetching in workspace root..."
+  git -C "$WORK_DIR" config remote.origin.fetch "$all_refspec"
+  if ! git -C "$WORK_DIR" fetch origin; then
+    note "Warning: could not fetch all branches in workspace root."
+    note "  The main checkout is fine; retry later with: git fetch origin"
+  fi
+
+  step "Widening refspec and fetching in each submodule..."
+  git -C "$WORK_DIR" submodule foreach --recursive '
+    git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+    if ! git fetch origin; then
+      echo "Warning: could not fetch all branches in $name."
+      echo "  The main checkout is fine; retry later with: git fetch origin"
+    fi
+  ' || true
 }
 
 # Set pull behavior to merge (not rebase) in workspace and each submodule.
@@ -335,6 +393,9 @@ publish_workspace() {
   )
   rmdir "$WORK_DIR"
   WORK_DIR=""
+
+  step "Syncing submodule remotes..."
+  git -C "$TARGET_DIR" submodule sync --recursive
 }
 
 # Remove the one-off downloaded helper while keeping the tracked copy in repos.
@@ -374,6 +435,7 @@ main() {
   check_target_dir
   clone_workspace
   checkout_submodule_main
+  fetch_all_branches
   configure_pull_behavior
   install_dependencies
   publish_workspace
@@ -381,6 +443,16 @@ main() {
 
   log "Done"
   note "Workspace installed at: $TARGET_DIR"
+  note ""
+  note "Next steps:"
+  note "  cd $TARGET_DIR"
+  note "  Local GUI: cursor pylonline.code-workspace  (or: code pylonline.code-workspace)"
+  note "  Remote SSH: open pylonline.code-workspace from Cursor Remote SSH on your desktop"
+  note "              (the cursor CLI in an SSH shell cannot reach your desktop app)"
+  note "  pnpm run submodules:status"
+  note ""
+  note "Before portal dev or deploy:"
+  note "  cd portal && npm run core-ui:prepare && npm run ui:sync"
   print_total_runtime
 }
 

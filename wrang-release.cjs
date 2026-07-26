@@ -3,11 +3,99 @@
 
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
+const https = require("node:https");
 const path = require("node:path");
 
 const ROOT = __dirname;
 const VALID_REPOS = new Set(["workspace", "core-lint", "core-ui", "portal", "pylon", "scripts"]);
 const CORE_LINT_CONSUMERS = ["core-ui", "portal", "pylon", "scripts"];
+let cachedPnpmExecutable = null;
+let cachedPreflightNodeBinDir = undefined;
+
+/** Node 22+ bin dir for portal/pylon when the preflight runner is older (e.g. IDE Node 20). */
+function resolvePreflightNodeBinDir() {
+  if (cachedPreflightNodeBinDir !== undefined) return cachedPreflightNodeBinDir;
+  const requiredMajor = 22;
+  const currentMajor = Number(process.version.slice(1).split(".")[0]);
+  if (currentMajor >= requiredMajor) {
+    cachedPreflightNodeBinDir = "";
+    return "";
+  }
+  const nvmVersionsDir = path.join(process.env.HOME || "", ".nvm", "versions", "node");
+  if (!fs.existsSync(nvmVersionsDir)) {
+    cachedPreflightNodeBinDir = "";
+    return "";
+  }
+  const candidates = fs
+    .readdirSync(nvmVersionsDir)
+    .filter((entry) => /^v22(?:\.\d+){0,2}$/.test(entry))
+    .sort()
+    .reverse();
+  for (const versionDir of candidates) {
+    const binDir = path.join(nvmVersionsDir, versionDir, "bin");
+    if (fs.existsSync(path.join(binDir, "node"))) {
+      cachedPreflightNodeBinDir = binDir;
+      return binDir;
+    }
+  }
+  cachedPreflightNodeBinDir = "";
+  return "";
+}
+
+function preflightNodeExecutable() {
+  const binDir = resolvePreflightNodeBinDir();
+  if (binDir) return path.join(binDir, "node");
+  return process.execPath;
+}
+
+/** pnpm on PATH, else corepack, else npx (no global install required). */
+function resolvePnpmExecutable() {
+  if (cachedPnpmExecutable !== null) return cachedPnpmExecutable;
+  const candidates = ["pnpm", "corepack pnpm", "npx --yes pnpm@10"];
+  for (const candidate of candidates) {
+    const probe = spawnSync(`${candidate} --version`, {
+      cwd: ROOT,
+      shell: true,
+      encoding: "utf8",
+      stdio: "pipe",
+    });
+    if (probe.status === 0) {
+      cachedPnpmExecutable = candidate;
+      return cachedPnpmExecutable;
+    }
+  }
+  cachedPnpmExecutable = "";
+  return "";
+}
+
+function pnpm(commandSuffix) {
+  const exe = resolvePnpmExecutable();
+  if (!exe) {
+    throw new Error(
+      "pnpm is required for release:preflight. Install with:\n" +
+        "  corepack enable && corepack prepare pnpm@10 --activate\n" +
+        "  npm install -g pnpm"
+    );
+  }
+  const suffix = String(commandSuffix || "").trim();
+  return suffix ? `${exe} ${suffix}` : exe;
+}
+
+function pylonPreflightEnabled() {
+  return fs.existsSync(path.join(ROOT, "pylon", "scripts", "prepare-core-ui.cjs"));
+}
+
+function preflightRepoOrder() {
+  const order = ["core-lint", "core-ui", "scripts", "portal"];
+  if (pylonPreflightEnabled()) order.push("pylon");
+  return order;
+}
+
+function preflightCoreUiConsumers() {
+  const consumers = ["portal"];
+  if (pylonPreflightEnabled()) consumers.push("pylon");
+  return consumers;
+}
 /** Total width (including `+`/`|` borders) for all preflight ASCII tables. */
 const STANDARD_TABLE_WIDTH = 150;
 /** Column inner widths for the streaming TAP test table; must satisfy `computeBorderLen` = STANDARD_TABLE_WIDTH. */
@@ -215,17 +303,11 @@ Repos:
   process.exit(code);
 }
 
-function run(command, cwd = ROOT) {
-  const result = runWithResult(command, cwd);
-  if (!result.ok) {
-    const location = path.relative(ROOT, cwd) || ".";
-    throw new Error(`Command failed in ${location}: ${command}`);
-  }
-}
-
-function runWithResult(command, cwd = ROOT, options = {}) {
-  const { printOutput = false } = options;
-  const childEnv = { ...process.env };
+function buildPreflightChildEnv(options = {}) {
+  const { npmLogLevel = "", envExtra = null } = options;
+  const childEnv = { ...process.env, ...(envExtra || {}) };
+  // Non-interactive preflight: pnpm refuses node_modules purge without TTY otherwise.
+  childEnv.CI = "true";
   // Some local shells inject npm_config_* keys that modern npm treats as
   // unsupported/legacy config aliases; remove known noisy keys for cleaner runs.
   for (const key of Object.keys(childEnv)) {
@@ -240,50 +322,57 @@ function runWithResult(command, cwd = ROOT, options = {}) {
       delete childEnv[key];
     }
   }
-  // Keep preflight output readable when nested npm invocations emit
-  // env-config deprecation chatter that is not actionable for repo code.
-  childEnv.NPM_CONFIG_LOGLEVEL = childEnv.NPM_CONFIG_LOGLEVEL || "error";
-  childEnv.npm_config_loglevel = childEnv.npm_config_loglevel || "error";
-  const result = spawnSync(command, {
+  const logLevel = npmLogLevel || childEnv.NPM_CONFIG_LOGLEVEL || "error";
+  childEnv.NPM_CONFIG_LOGLEVEL = logLevel;
+  childEnv.npm_config_loglevel = logLevel;
+  const nodeBinDir = resolvePreflightNodeBinDir();
+  if (nodeBinDir) {
+    childEnv.PATH = `${nodeBinDir}${path.delimiter}${childEnv.PATH || ""}`;
+  }
+  return childEnv;
+}
+
+function run(command, cwd = ROOT) {
+  const result = runWithResult(command, cwd);
+  if (!result.ok) {
+    const location = path.relative(ROOT, cwd) || ".";
+    throw new Error(`Command failed in ${location}: ${command}`);
+  }
+}
+
+function runWithResult(command, cwd = ROOT, options = {}) {
+  const { printOutput = false, timeoutMs = 0, npmLogLevel = "" } = options;
+  const childEnv = buildPreflightChildEnv({ npmLogLevel });
+  const spawnOpts = {
     cwd,
     shell: true,
-    stdio: "pipe",
+    stdio: printOutput ? "inherit" : "pipe",
     encoding: "utf8",
     env: childEnv,
-  });
-  const stdout = result.stdout || "";
-  const stderr = result.stderr || "";
+  };
+  if (timeoutMs > 0) spawnOpts.timeout = timeoutMs;
+  const result = spawnSync(command, spawnOpts);
+  const stdout = printOutput ? "" : result.stdout || "";
+  const stderr = printOutput ? "" : result.stderr || "";
   if (printOutput) {
     if (stdout) process.stdout.write(stdout);
     if (stderr) process.stderr.write(stderr);
   }
+  const timedOut = result.error && result.error.code === "ETIMEDOUT";
   return {
-    ok: result.status === 0,
-    status: result.status,
+    ok: !timedOut && result.status === 0,
+    status: timedOut ? 124 : result.status,
     command,
     cwd,
     stdout,
-    stderr,
+    stderr: timedOut ? `${stderr}\nCommand timed out after ${timeoutMs}ms`.trim() : stderr,
+    timedOut,
   };
 }
 
 async function runWithStreamingResult(command, cwd = ROOT, options = {}) {
-  const { printOutput = false, onLine, env: envExtra = null } = options;
-  const childEnv = { ...process.env, ...(envExtra || {}) };
-  for (const key of Object.keys(childEnv)) {
-    const normalized = key.toLowerCase();
-    if (!normalized.startsWith("npm_config_")) continue;
-    if (
-      normalized.includes("pylonline_registry") ||
-      normalized.includes("verify_deps_before_run") ||
-      normalized.includes("npm_globalconfig") ||
-      normalized.includes("jsr_registry")
-    ) {
-      delete childEnv[key];
-    }
-  }
-  childEnv.NPM_CONFIG_LOGLEVEL = childEnv.NPM_CONFIG_LOGLEVEL || "error";
-  childEnv.npm_config_loglevel = childEnv.npm_config_loglevel || "error";
+  const { printOutput = false, onLine, env: envExtra = null, timeoutMs = 0 } = options;
+  const childEnv = buildPreflightChildEnv({ envExtra });
 
   return await new Promise((resolve) => {
     const child = spawn(command, {
@@ -292,6 +381,14 @@ async function runWithStreamingResult(command, cwd = ROOT, options = {}) {
       env: childEnv,
       stdio: ["ignore", "pipe", "pipe"],
     });
+    let timedOut = false;
+    let timeoutTimer = null;
+    if (timeoutMs > 0) {
+      timeoutTimer = setTimeout(() => {
+        timedOut = true;
+        child.kill("SIGTERM");
+      }, timeoutMs);
+    }
 
     let stdout = "";
     let stderr = "";
@@ -323,17 +420,21 @@ async function runWithStreamingResult(command, cwd = ROOT, options = {}) {
     });
 
     child.on("close", (code) => {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
       if (onLine) {
         if (stdoutBuffer) onLine(stdoutBuffer, { isStdErr: false });
         if (stderrBuffer) onLine(stderrBuffer, { isStdErr: true });
       }
       resolve({
-        ok: code === 0,
-        status: code,
+        ok: !timedOut && code === 0,
+        status: timedOut ? 124 : code,
         command,
         cwd,
         stdout,
-        stderr,
+        stderr: timedOut
+          ? `${stderr}\nCommand timed out after ${timeoutMs}ms`.trim()
+          : stderr,
+        timedOut,
       });
     });
   });
@@ -390,7 +491,31 @@ function buildWorkspaceInternalLockRefreshCommand() {
   if (coreLintVersion) targets.push(`@pylonline/core-lint@${coreLintVersion}`);
   if (coreUiVersion) targets.push(`@pylonline/core-ui@${coreUiVersion}`);
   if (!targets.length) return "";
-  return `pnpm update -r ${targets.join(" ")} --lockfile-only`;
+  return pnpm(`update -r ${targets.join(" ")} --lockfile-only`);
+}
+
+function coreLintPinsEquivalent(current, expected) {
+  const cur = String(current || "").trim();
+  const exp = String(expected || "").trim();
+  if (!cur || !exp) return cur === exp;
+  if (cur === exp) return true;
+  const stripRange = (value) => value.replace(/^[\^~]/, "");
+  return stripRange(cur) === stripRange(exp);
+}
+
+function resolveLockfileResolvedVersion(lockPath, packageName) {
+  if (!fs.existsSync(lockPath)) return "";
+  try {
+    const lock = readJson(lockPath);
+    const pkgKey = `node_modules/${packageName}`;
+    const fromPackages = lock.packages?.[pkgKey]?.version;
+    if (fromPackages) return String(fromPackages).trim();
+    const fromDeps = lock.dependencies?.[packageName]?.version;
+    if (fromDeps) return String(fromDeps).trim();
+  } catch (_error) {
+    return "";
+  }
+  return "";
 }
 
 function syncCoreLintPins(options) {
@@ -413,11 +538,12 @@ function syncCoreLintPins(options) {
 
   const mismatches = [];
   for (const repoName of CORE_LINT_CONSUMERS) {
+    if (repoName === "pylon" && !pylonPreflightEnabled()) continue;
     const pkgPath = path.join(ROOT, repoName, "package.json");
     if (!fs.existsSync(pkgPath)) continue;
     const pkg = readJson(pkgPath);
     const current = pkg?.devDependencies?.["@pylonline/core-lint"];
-    if (current === coreLintVersion) continue;
+    if (coreLintPinsEquivalent(current, coreLintVersion)) continue;
 
     mismatches.push({
       repo: repoName,
@@ -465,14 +591,46 @@ function syncCoreLintPins(options) {
   };
 }
 
-function refreshCoreLintConsumerLockfiles(repos) {
+function refreshCoreLintConsumerLockfiles(repos, coreLintVersion = "") {
   const refreshed = [];
+  const LOCKFILE_REFRESH_TIMEOUT_MS = 10 * 60 * 1000;
   for (const repoName of repos) {
+    if (repoName === "pylon" && !pylonPreflightEnabled()) continue;
     const dir = repoDir(repoName);
     const lockPath = path.join(dir, "package-lock.json");
     if (!fs.existsSync(lockPath)) continue;
+    const pinnedVersion =
+      coreLintVersion ||
+      resolveRepoDependencyVersion(dir, "@pylonline/core-lint") ||
+      "";
+    if (
+      pinnedVersion &&
+      coreLintPinsEquivalent(
+        resolveLockfileResolvedVersion(lockPath, "@pylonline/core-lint"),
+        pinnedVersion
+      )
+    ) {
+      console.log(`\n=== Refresh npm lockfile checksums (${repoName}) ===`);
+      console.log(`  skipped (package-lock.json already resolves @pylonline/core-lint@${pinnedVersion})`);
+      continue;
+    }
+    const command = pinnedVersion
+      ? `npm install "@pylonline/core-lint@${pinnedVersion}" --package-lock-only --ignore-scripts --no-audit --no-fund`
+      : "npm install --package-lock-only --ignore-scripts --no-audit --no-fund";
     console.log(`\n=== Refresh npm lockfile checksums (${repoName}) ===`);
-    run("npm install --package-lock-only --ignore-scripts", dir);
+    console.log(`  ${command}`);
+    console.log("  (may take 1–3 min while npm contacts the registry — not stuck)");
+    const result = runWithResult(command, dir, {
+      printOutput: true,
+      timeoutMs: LOCKFILE_REFRESH_TIMEOUT_MS,
+      npmLogLevel: "warn",
+    });
+    if (!result.ok) {
+      const location = path.relative(ROOT, dir) || ".";
+      throw new Error(
+        `Lockfile refresh failed in ${location}: ${command}${result.timedOut ? " (timed out)" : ""}`
+      );
+    }
     refreshed.push(repoName);
   }
   return refreshed;
@@ -563,6 +721,7 @@ async function recordCommandCheck(summary, failures, name, command, cwd, options
   const result = await runWithStreamingResult(command, cwd, {
     printOutput: verbose,
     onLine: combinedOnLine,
+    timeoutMs: Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 0,
     ...(parseCoreLintSteps ? { env: { CORE_LINT_CHECK_STEPS: "1" } } : {}),
   });
   if (heartbeatTimer) clearInterval(heartbeatTimer);
@@ -803,6 +962,173 @@ function colorizeLabel(kind, text) {
   if (kind === "error") return `${redBold}${text}${reset}`;
   if (kind === "warn") return `${yellowBold}${text}${reset}`;
   return `${greenBold}${text}${reset}`;
+}
+
+const PLAYWRIGHT_PACKAGE = "@playwright/test";
+const PLAYWRIGHT_CONSUMER_REPOS = ["portal", "pylon"];
+
+function parsePinnedSemverVersion(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const exact = text.match(/^(\d+\.\d+\.\d+)$/);
+  if (exact) return exact[1];
+  const fromRange = text.match(/(\d+\.\d+\.\d+)/);
+  return fromRange ? fromRange[1] : text.replace(/^[\^~>=<\s]+/, "");
+}
+
+function readRepoDevDependency(repoName, depName) {
+  const pkgPath = path.join(repoDir(repoName), "package.json");
+  if (!fs.existsSync(pkgPath)) return "";
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+    return parsePinnedSemverVersion(deps[depName]);
+  } catch (_error) {
+    return "";
+  }
+}
+
+function compareSemverParts(a, b) {
+  const toParts = (version) =>
+    String(version || "")
+      .trim()
+      .split(".")
+      .map((part) => parseInt(part, 10) || 0);
+  const left = toParts(a);
+  const right = toParts(b);
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const diff = (left[i] || 0) - (right[i] || 0);
+    if (diff !== 0) return diff < 0 ? -1 : 1;
+  }
+  return 0;
+}
+
+function fetchNpmLatestVersion(packageName, timeoutMs = 10_000) {
+  const result = spawnSync(`npm view ${JSON.stringify(packageName)} version`, {
+    cwd: ROOT,
+    shell: true,
+    encoding: "utf8",
+    stdio: "pipe",
+    timeout: timeoutMs,
+    env: buildPreflightChildEnv(),
+  });
+  if (result.error || result.status !== 0) return "";
+  return parsePinnedSemverVersion(String(result.stdout || "").trim());
+}
+
+function fetchLatestNodeVersionForMajor(major, timeoutMs = 10_000) {
+  return new Promise((resolve) => {
+    const request = https.get(
+      "https://nodejs.org/dist/index.json",
+      { timeout: timeoutMs },
+      (response) => {
+        if (response.statusCode && response.statusCode >= 400) {
+          response.resume();
+          resolve("");
+          return;
+        }
+        let body = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          body += chunk;
+        });
+        response.on("end", () => {
+          try {
+            const entries = JSON.parse(body);
+            const prefix = `v${major}.`;
+            const latest = entries.find((entry) =>
+              String(entry.version || "").startsWith(prefix)
+            );
+            resolve(parsePinnedSemverVersion(String(latest?.version || "").replace(/^v/, "")));
+          } catch (_error) {
+            resolve("");
+          }
+        });
+      }
+    );
+    request.on("timeout", () => {
+      request.destroy();
+      resolve("");
+    });
+    request.on("error", () => resolve(""));
+  });
+}
+
+function readWorkspaceNodeMajor() {
+  for (const repoName of ["portal", "pylon"]) {
+    const nvmrcPath = path.join(repoDir(repoName), ".nvmrc");
+    if (!fs.existsSync(nvmrcPath)) continue;
+    const major = String(fs.readFileSync(nvmrcPath, "utf8")).trim().split(".")[0];
+    if (/^\d+$/.test(major)) return major;
+  }
+  return "";
+}
+
+function playwrightAdvisoryRepos(targets) {
+  const inScope = new Set(targets);
+  return PLAYWRIGHT_CONSUMER_REPOS.filter((repoName) => {
+    if (!inScope.has(repoName)) return false;
+    if (repoName === "pylon" && !pylonPreflightEnabled()) return false;
+    return fs.existsSync(path.join(repoDir(repoName), "package.json"));
+  });
+}
+
+function formatPlaywrightAdvisoryLine(repoName, pinned, latest) {
+  const label = `${PLAYWRIGHT_PACKAGE} (${repoName})`;
+  if (!pinned) {
+    return `${label}: not pinned in package.json`;
+  }
+  if (!latest) {
+    return `${label}: pinned ${pinned}; latest on npm unavailable (offline or registry timeout)`;
+  }
+  if (compareSemverParts(pinned, latest) >= 0) {
+    return `${label}: pinned ${pinned} (matches latest on npm)`;
+  }
+  return `${label}: pinned ${pinned}; latest on npm is ${latest} — upgrade is optional`;
+}
+
+function formatNodeAdvisoryLine(running, expectedMajor, latest) {
+  const runningVersion = parsePinnedSemverVersion(running);
+  if (!expectedMajor) {
+    return `Node.js: running ${runningVersion || running}`;
+  }
+  if (!latest) {
+    return `Node.js: running ${runningVersion || running}; workspace .nvmrc ${expectedMajor}; latest Node ${expectedMajor} unavailable (offline or timeout)`;
+  }
+  if (compareSemverParts(runningVersion, latest) >= 0) {
+    return `Node.js: running ${runningVersion || running}; latest Node ${expectedMajor} is ${latest} (current)`;
+  }
+  return `Node.js: running ${runningVersion || running}; latest Node ${expectedMajor} is ${latest} — upgrade is optional`;
+}
+
+async function printPreflightToolingAdvisories(targets) {
+  const playwrightRepos = playwrightAdvisoryRepos(targets);
+  const expectedNodeMajor = readWorkspaceNodeMajor();
+  if (!expectedNodeMajor && !playwrightRepos.length) return;
+
+  printCenteredBanner("TOOLING ADVISORIES (informational)");
+  const lines = [];
+
+  if (expectedNodeMajor) {
+    const latestNode = await fetchLatestNodeVersionForMajor(expectedNodeMajor);
+    lines.push(formatNodeAdvisoryLine(process.version.slice(1), expectedNodeMajor, latestNode));
+  }
+
+  if (playwrightRepos.length) {
+    const playwrightLatest = fetchNpmLatestVersion(PLAYWRIGHT_PACKAGE);
+    for (const repoName of playwrightRepos) {
+      const pinned = readRepoDevDependency(repoName, PLAYWRIGHT_PACKAGE);
+      lines.push(formatPlaywrightAdvisoryLine(repoName, pinned, playwrightLatest));
+    }
+  }
+
+  for (const line of lines) {
+    const isOpportunity =
+      line.includes("latest on npm is ") ||
+      (line.includes("latest Node") && line.includes("upgrade is optional"));
+    console.log(isOpportunity ? colorizeLabel("warn", line) : line);
+  }
+  console.log("Advisories are informational only; pinned versions are not changed by preflight.");
 }
 
 function parseTapTests(output) {
@@ -1168,38 +1494,126 @@ function repoDir(repoName) {
 }
 
 function resolveCoreUiPrepareCommand(repoName, options) {
-  if (repoName !== "portal" && repoName !== "pylon") {
-    return "pnpm run core-ui:prepare";
+  const dir = repoDir(repoName);
+  const workspaceCoreUi = path.join(ROOT, "core-ui");
+  if (fs.existsSync(path.join(workspaceCoreUi, "package.json"))) {
+    return `node scripts/core-ui/prepare-core-ui.cjs --source local --path ${JSON.stringify(workspaceCoreUi)}`;
   }
   if (options.coreUiConsumerSource === "repo-main") {
     const ref = String(options.coreUiConsumerRef || "main").trim() || "main";
-    return `pnpm run core-ui:prepare -- --source remote --path ../core-ui --ref ${ref}`;
+    return `node scripts/core-ui/prepare-core-ui.cjs --source remote --path ../core-ui --ref ${ref}`;
   }
-  return "pnpm run core-ui:prepare";
+  return resolveRepoNpmScriptCommand(dir, "core-ui:prepare", "npm run core-ui:prepare");
+}
+
+function resolveCoreLintCliInvocation(scriptText, dir) {
+  const script = String(scriptText || "").trim();
+  if (!script) return "";
+  const coreLintCliPath = path.join(ROOT, "core-lint", "bin", "core-lint.cjs");
+  if (!fs.existsSync(coreLintCliPath)) return "";
+
+  let match = script.match(/^core-lint\s+(.+)$/);
+  if (match) {
+    return `${preflightNodeExecutable()} ${JSON.stringify(coreLintCliPath)} ${match[1]}`;
+  }
+  match = script.match(/^node\s+(?:\.\/)?bin\/core-lint\.cjs\s+(.+)$/);
+  if (match) {
+    return `${preflightNodeExecutable()} ${JSON.stringify(path.join(dir, "bin", "core-lint.cjs"))} ${match[1]}`;
+  }
+  match = script.match(/core-lint\.cjs\s+(.+)$/);
+  if (match) {
+    const localCli = path.join(dir, "bin", "core-lint.cjs");
+    const cliPath = fs.existsSync(localCli) ? localCli : coreLintCliPath;
+    return `${preflightNodeExecutable()} ${JSON.stringify(cliPath)} ${match[1]}`;
+  }
+  return "";
+}
+
+/** Prefer npm/node script lines in workspace packages — avoids pnpm workspace reinstall without TTY. */
+function resolveRepoNpmScriptCommand(dir, scriptName, workspaceFallback) {
+  if (!dir || !fs.existsSync(path.join(dir, "package.json"))) {
+    return workspaceFallback || "";
+  }
+  let packageJson;
+  try {
+    packageJson = readJson(path.join(dir, "package.json"));
+  } catch (_error) {
+    return workspaceFallback || "";
+  }
+  const script = String(packageJson?.scripts?.[scriptName] || "").trim();
+  if (!script) return workspaceFallback || "";
+  const coreLintCommand = resolveCoreLintCliInvocation(script, dir);
+  if (coreLintCommand) return coreLintCommand;
+  if (/^node\s+/.test(script)) return script;
+  if (/^npm run\s+/.test(script)) return script;
+  return `npm run ${scriptName}`;
 }
 
 function resolveRepoCheckCommand(repoName, dir) {
-  const fallback = "pnpm run check";
+  const fallback = pnpm("run check");
   if (repoName === "workspace") return fallback;
-  const packageJsonPath = path.join(dir, "package.json");
-  if (!fs.existsSync(packageJsonPath)) return fallback;
+  return resolveRepoNpmScriptCommand(dir, "check", fallback);
+}
 
-  let packageJson;
-  try {
-    packageJson = readJson(packageJsonPath);
-  } catch (_error) {
-    return fallback;
+function resolveRepoFormatWriteCommand(repoName, dir) {
+  const fallback = pnpm("run format:write");
+  if (repoName === "workspace") return fallback;
+  return resolveRepoNpmScriptCommand(dir, "format:write", fallback) || "";
+}
+
+function resolveRepoTestCommand(dir) {
+  return resolveRepoNpmScriptCommand(dir, "test", pnpm("run test"));
+}
+
+function shouldAutoRunFormatFix(checkResult) {
+  const output = `${checkResult?.stdout || ""}\n${checkResult?.stderr || ""}`;
+  return /Code style issues found/i.test(output);
+}
+
+async function runCheckWithAutoFormatFix(
+  summary,
+  failures,
+  {
+    checkName,
+    checkCommand,
+    checkCwd,
+    formatStepName = "",
+    formatCommand = "",
+    formatCwd = checkCwd,
+    options = {},
+  }
+) {
+  const checksBefore = summary.checks.length;
+  const failuresBefore = failures.length;
+  let checkRes = await recordCommandCheck(summary, failures, checkName, checkCommand, checkCwd, options);
+  if (checkRes.ok || !formatCommand || !shouldAutoRunFormatFix(checkRes)) {
+    return { checkRes, autoFixed: false, formatRes: null };
   }
 
-  const checkScript = String(packageJson?.scripts?.check || "").trim();
-  if (!checkScript) return fallback;
-  const match = checkScript.match(/^core-lint\s+check(?:\s+(.*))?$/);
-  if (!match) return fallback;
+  summary.autoFormatRetries = Number(summary.autoFormatRetries || 0) + 1;
+  console.log(`${checkName}: formatting issue detected; running auto-fix and retrying check.`);
+  const formatRes = await recordCommandCheck(
+    summary,
+    failures,
+    formatStepName || `${checkName} format write`,
+    formatCommand,
+    formatCwd,
+    options
+  );
+  if (!formatRes.ok) {
+    return { checkRes, autoFixed: false, formatRes };
+  }
 
-  const coreLintCliPath = path.join(ROOT, "core-lint", "bin", "core-lint.cjs");
-  if (!fs.existsSync(coreLintCliPath)) return fallback;
-  const extraArgs = match[1] ? ` ${match[1]}` : "";
-  return `${process.execPath} ${JSON.stringify(coreLintCliPath)} check${extraArgs}`;
+  const retryRes = await recordCommandCheck(summary, failures, checkName, checkCommand, checkCwd, options);
+  if (!retryRes.ok) {
+    return { checkRes: retryRes, autoFixed: false, formatRes };
+  }
+
+  summary.autoFormatFixes = Number(summary.autoFormatFixes || 0) + 1;
+  // Remove first failed check attempt and its transient failure record.
+  summary.checks.splice(checksBefore, 1);
+  failures.splice(failuresBefore, 1);
+  return { checkRes: retryRes, autoFixed: true, formatRes };
 }
 
 function ensureRepoExists(repoName) {
@@ -1231,7 +1645,24 @@ function resolveRepoDependencyVersion(dir, packageName) {
     const pkg = readJson(pkgPath);
     const dev = pkg?.devDependencies || {};
     const deps = pkg?.dependencies || {};
-    return String(dev[packageName] || deps[packageName] || "").trim();
+    const raw = String(dev[packageName] || deps[packageName] || "").trim();
+    if (raw.startsWith("workspace:")) {
+      const siblingDir =
+        packageName === "@pylonline/core-lint"
+          ? "core-lint"
+          : packageName === "@pylonline/core-ui"
+            ? "core-ui"
+            : "";
+      if (siblingDir) {
+        const siblingPkgPath = path.join(ROOT, siblingDir, "package.json");
+        if (fs.existsSync(siblingPkgPath)) {
+          const siblingVersion = String(readJson(siblingPkgPath).version || "").trim();
+          if (siblingVersion) return siblingVersion;
+        }
+      }
+      return "";
+    }
+    return raw;
   } catch (_error) {
     return "";
   }
@@ -1249,13 +1680,16 @@ async function runWorkspaceChecks(options, summary, failures) {
   printCenteredBanner("WORKSPACE INSTALL + ROOT CHECKS");
   const internalLockRefreshCommand = buildWorkspaceInternalLockRefreshCommand();
   if (internalLockRefreshCommand) {
+    console.log(
+      "Starting workspace internal package lock refresh (lockfile-only; usually under a minute)..."
+    );
     const workspaceLockRefreshRes = await recordCommandCheck(
       summary,
       failures,
       "workspace internal package lock refresh",
       internalLockRefreshCommand,
       ROOT,
-      options
+      { ...options, heartbeat: true }
     );
     summary.repoReports.workspace.steps.push({
       stepName: "internal package lock refresh",
@@ -1264,29 +1698,35 @@ async function runWorkspaceChecks(options, summary, failures) {
     });
   }
   const installCommand = options.noFrozenLockfile
-    ? "pnpm install --no-frozen-lockfile"
-    : "pnpm install --frozen-lockfile";
+    ? pnpm("install --no-frozen-lockfile")
+    : pnpm("install --frozen-lockfile");
   const repoReport = summary.repoReports.workspace;
+  console.log(
+    "Starting workspace install (pnpm; first run or native deps esbuild/sharp/workerd can take several minutes with no output)..."
+  );
   const installRes = await recordCommandCheck(
     summary,
     failures,
     "workspace install",
     installCommand,
     ROOT,
-    options
+    { ...options, heartbeat: true }
   );
   repoReport.steps.push({
     stepName: "install",
     status: installRes.ok ? "passed" : "failed",
     durationMs: installRes.durationMs,
   });
+  console.log(
+    "Checking git submodule pins (pnpm run submodules:status — local git status only, no fetch)..."
+  );
   const submoduleRes = await recordCommandCheck(
     summary,
     failures,
     "workspace submodules status",
-    "pnpm run submodules:status",
+    pnpm("run submodules:status"),
     ROOT,
-    options
+    { ...options, heartbeat: true, timeoutMs: 120_000 }
   );
   repoReport.steps.push({
     stepName: "submodules status",
@@ -1294,16 +1734,25 @@ async function runWorkspaceChecks(options, summary, failures) {
     durationMs: submoduleRes.durationMs,
   });
   printSubmoduleSummaryFromOutput(`${submoduleRes.stdout}\n${submoduleRes.stderr}`);
-  const rootRes = await recordCommandCheck(
-    summary,
-    failures,
-    "workspace root check",
-    "pnpm run check:workspace-root",
-    ROOT,
-    options
-  );
+  const { checkRes: rootRes, autoFixed: workspaceAutoFixed, formatRes: workspaceFormatRes } =
+    await runCheckWithAutoFormatFix(summary, failures, {
+      checkName: "workspace root check",
+      checkCommand: pnpm("run check:workspace-root"),
+      checkCwd: ROOT,
+      formatStepName: "workspace root format write",
+      formatCommand: pnpm("run format:write:workspace-root"),
+      formatCwd: ROOT,
+      options,
+    });
+  if (workspaceFormatRes) {
+    repoReport.steps.push({
+      stepName: "root format write",
+      status: workspaceFormatRes.ok ? "passed" : "failed",
+      durationMs: workspaceFormatRes.durationMs,
+    });
+  }
   repoReport.steps.push({
-    stepName: "root check",
+    stepName: workspaceAutoFixed ? "root check (auto-fixed formatting)" : "root check",
     status: rootRes.ok ? "passed" : "failed",
     durationMs: rootRes.durationMs,
   });
@@ -1312,7 +1761,7 @@ async function runWorkspaceChecks(options, summary, failures) {
 }
 
 async function ensureCoreUiSyncForConsumers(summary, failures, options) {
-  const consumers = ["portal", "pylon"];
+  const consumers = preflightCoreUiConsumers();
   for (const repoName of consumers) {
     const dir = repoDir(repoName);
     ensureRepoExists(repoName);
@@ -1341,7 +1790,7 @@ async function ensureCoreUiSyncForConsumers(summary, failures, options) {
       summary,
       failures,
       `${repoName} ui sync`,
-      "pnpm run ui:sync",
+      resolveRepoNpmScriptCommand(dir, "ui:sync", "npm run ui:sync"),
       dir,
       options
     );
@@ -1366,7 +1815,7 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
       summary,
       failures,
       "workspace root check",
-      "pnpm run check:workspace-root",
+      pnpm("run check:workspace-root"),
       dir,
       options
     );
@@ -1432,52 +1881,81 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   });
 
   if (repoName === "portal" || repoName === "pylon") {
-    if (!summary.coreUiSyncBootstrapRepos.has(repoName)) {
-      const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
-      const prepRes = await recordCommandCheck(
-        summary,
-        failures,
-        `${repoName} core-ui prepare`,
-        prepCommand,
-        dir,
-        options
-      );
-      repoReport.steps.push({
-        stepName: "core-ui prepare",
-        status: prepRes.ok ? "passed" : "failed",
-        durationMs: prepRes.durationMs,
-      });
-      const syncRes = await recordCommandCheck(
-        summary,
-        failures,
-        `${repoName} ui sync`,
-        "pnpm run ui:sync",
-        dir,
-        options
-      );
-      repoReport.steps.push({
-        stepName: "ui sync",
-        status: syncRes.ok ? "passed" : "failed",
-        durationMs: syncRes.durationMs,
-      });
-      summary.coreUiSyncBootstrapRepos.add(repoName);
-    }
+    // npm ci/install restores registry @pylonline/core-ui over any earlier prepare; always re-prepare + sync.
+    const prepCommand = resolveCoreUiPrepareCommand(repoName, options);
+    const prepRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} core-ui prepare`,
+      prepCommand,
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "core-ui prepare",
+      status: prepRes.ok ? "passed" : "failed",
+      durationMs: prepRes.durationMs,
+    });
+    const syncRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} ui sync`,
+      resolveRepoNpmScriptCommand(dir, "ui:sync", "npm run ui:sync"),
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "ui sync",
+      status: syncRes.ok ? "passed" : "failed",
+      durationMs: syncRes.durationMs,
+    });
+    summary.coreUiSyncBootstrapRepos.add(repoName);
   }
 
   if (!options.verbose) {
-    console.log(`${repoName} check (pnpm run check):`);
+    console.log(`${repoName} check (${resolveRepoCheckCommand(repoName, dir)}):`);
+  }
+  const formatWriteCommand = resolveRepoFormatWriteCommand(repoName, dir);
+  if (formatWriteCommand) {
+    if (!options.verbose) {
+      console.log(`${repoName} format write (${formatWriteCommand}):`);
+    }
+    const formatWriteRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} format write`,
+      formatWriteCommand,
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "format write",
+      status: formatWriteRes.ok ? "passed" : "failed",
+      durationMs: formatWriteRes.durationMs,
+    });
+    if (!options.verbose) {
+      console.log(`${repoName} format write ${formatWriteRes.ok ? "passed" : "failed"}`);
+    }
   }
   const checkCommand = resolveRepoCheckCommand(repoName, dir);
-  const checkRes = await recordCommandCheck(
-    summary,
-    failures,
-    `${repoName} check`,
+  const { checkRes, autoFixed, formatRes } = await runCheckWithAutoFormatFix(summary, failures, {
+    checkName: `${repoName} check`,
     checkCommand,
-    dir,
-    { ...options, heartbeat: true, parseCoreLintCheckSteps: true }
-  );
+    checkCwd: dir,
+    formatStepName: `${repoName} format write`,
+    formatCommand: formatWriteCommand,
+    formatCwd: dir,
+    options: { ...options, heartbeat: true, parseCoreLintCheckSteps: true },
+  });
+  if (formatRes) {
+    repoReport.steps.push({
+      stepName: "format write (auto-fix retry)",
+      status: formatRes.ok ? "passed" : "failed",
+      durationMs: formatRes.durationMs,
+    });
+  }
   repoReport.steps.push({
-    stepName: "check",
+    stepName: autoFixed ? "check (auto-fixed formatting)" : "check",
     status: checkRes.ok ? "passed" : "failed",
     durationMs: checkRes.durationMs,
   });
@@ -1498,7 +1976,7 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     summary,
     failures,
     `${repoName} test`,
-    "pnpm run test",
+    resolveRepoTestCommand(dir),
     dir,
     {
       ...options,
@@ -1537,8 +2015,28 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const orderedRepos = ["core-lint", "core-ui", "scripts", "portal", "pylon"];
+  let pnpmExecutable = "";
+  try {
+    pnpmExecutable = resolvePnpmExecutable();
+    if (!pnpmExecutable) {
+      throw new Error(
+        "pnpm is required for release:preflight. Install with:\n" +
+          "  corepack enable && corepack prepare pnpm@10 --activate\n" +
+          "  npm install -g pnpm"
+      );
+    }
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  const orderedRepos = preflightRepoOrder();
   const targets = args.repo === "all" ? orderedRepos : [args.repo];
+  if (args.repo === "pylon" && !pylonPreflightEnabled()) {
+    console.error(
+      "pylon preflight is disabled (missing scripts/prepare-core-ui.cjs). Use --repo portal or restore pylon runtime scripts."
+    );
+    process.exit(1);
+  }
   const startedAt = nowMs();
   const summary = {
     repoTarget: args.repo,
@@ -1563,10 +2061,16 @@ async function main() {
     },
     testNameIndexCache: {},
     bumpApplied: false,
+    autoFormatRetries: 0,
+    autoFormatFixes: 0,
   };
   const failures = summary.failures;
 
   console.log("Running release preflight...");
+  console.log(`pnpm executable: ${pnpmExecutable}`);
+  if (!pylonPreflightEnabled()) {
+    console.log("pylon: skipped (scaffold repo — no scripts/prepare-core-ui.cjs)");
+  }
   console.log(`repo target: ${args.repo}`);
   console.log(`frozen lockfile: ${args.noFrozenLockfile ? "off" : "on"}`);
   console.log(`dry run: ${args.dryRun ? "on" : "off"}`);
@@ -1580,6 +2084,8 @@ async function main() {
     `refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`
   );
   console.log(`verbose output: ${args.verbose ? "on" : "off"}`);
+
+  await printPreflightToolingAdvisories(targets);
 
   let pinResult = null;
   const pinStart = nowMs();
@@ -1620,8 +2126,13 @@ async function main() {
 
   if (pinResult && (args.refreshCoreLintLockfiles || pinResult.changed.length)) {
     const refreshStart = nowMs();
-    const refreshTargets = args.refreshCoreLintLockfiles ? CORE_LINT_CONSUMERS : pinResult.changed;
-    const refreshed = refreshCoreLintConsumerLockfiles(refreshTargets);
+    const refreshTargets = (
+      args.refreshCoreLintLockfiles ? CORE_LINT_CONSUMERS : pinResult.changed
+    ).filter((name) => name !== "pylon" || pylonPreflightEnabled());
+    const refreshed = refreshCoreLintConsumerLockfiles(
+      refreshTargets,
+      pinResult.coreLintVersion
+    );
     summary.coreLintLockfilesRefreshed = refreshed;
     summary.checks.push({
       name: "core-lint lockfile refresh",
@@ -1631,13 +2142,16 @@ async function main() {
   }
 
   if (pinResult && pinResult.changed.length) {
+    console.log("\n=== Workspace pnpm lockfile refresh ===");
+    console.log(`  ${pnpm("install --lockfile-only")}`);
+    console.log("  (may take several minutes — not stuck)");
     const workspaceLockRefresh = await recordCommandCheck(
       summary,
       failures,
       "workspace pnpm lockfile refresh",
-      "pnpm install --lockfile-only",
+      pnpm("install --lockfile-only"),
       ROOT,
-      args
+      { ...args, verbose: true }
     );
     summary.repoReports.workspace.steps.push({
       stepName: "pnpm lockfile refresh",
@@ -1684,6 +2198,8 @@ async function main() {
         : "none",
     ],
     ["failures", String(failures.length)],
+    ["auto-format retries", String(summary.autoFormatRetries || 0)],
+    ["auto-format fixes applied", String(summary.autoFormatFixes || 0)],
     ["bump applied", summary.bump === "none" ? "n/a" : summary.bumpApplied ? "yes" : "no"],
   ];
   printSimpleTable(["field", "value"], summaryRows);
@@ -1718,6 +2234,11 @@ async function main() {
         : "-",
     ]);
     printSimpleTable(["status", "repo", "exit", "command", "test", "file"], rows);
+  }
+  if (summary.autoFormatRetries > 0) {
+    console.log(
+      `${colorizeLabel("warn", "AUTO-FORMAT")} retries ${summary.autoFormatRetries} | fixes applied ${summary.autoFormatFixes}`
+    );
   }
   if (args.summaryJson) {
     const summaryPayload = {
