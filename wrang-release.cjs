@@ -176,6 +176,7 @@ function parseArgs(argv) {
     coreLintVersion: "local",
     coreUiConsumerSource: "repo-main",
     coreUiConsumerRef: "main",
+    skipPrTests: false,
     verbose: false,
   };
 
@@ -250,6 +251,10 @@ function parseArgs(argv) {
       args.verbose = true;
       continue;
     }
+    if (arg === "--skip-pr-tests") {
+      args.skipPrTests = true;
+      continue;
+    }
     if (arg === "--help" || arg === "-h") {
       printHelpAndExit(0);
     }
@@ -282,7 +287,7 @@ function printHelpAndExit(code, error = "") {
     console.error(`\nError: ${error}\n`);
   }
   console.log(`Usage:
-  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--verbose] [--no-frozen-lockfile]
+  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--skip-pr-tests] [--verbose] [--no-frozen-lockfile]
 
 Examples:
   node wrang-release.cjs
@@ -294,12 +299,16 @@ Examples:
   node wrang-release.cjs --sync-core-lint-version
   node wrang-release.cjs --refresh-core-lint-lockfiles
   node wrang-release.cjs --core-ui-consumer-source repo-main --core-ui-consumer-ref main
+  node wrang-release.cjs --skip-pr-tests
   node wrang-release.cjs --verbose
   node wrang-release.cjs --repo core-ui --bump patch
   node wrang-release.cjs --repo portal --no-frozen-lockfile
 
 Repos:
-  workspace, core-lint, core-ui, portal, pylon, scripts, all`);
+  workspace, core-lint, core-ui, portal, pylon, scripts, all
+
+Flags:
+  --skip-pr-tests  Skip portal API/UI/perf (npm run test:pr); still runs unit+runtime via npm test`);
   process.exit(code);
 }
 
@@ -1912,6 +1921,41 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     summary.coreUiSyncBootstrapRepos.add(repoName);
   }
 
+  if (repoName === "portal") {
+    // Soft step: refresh git backup of reserved subdomains from prod KV when auth works.
+    if (!options.verbose) {
+      console.log(`${repoName} reserved-subdomains snapshot (ops/reserved-subdomains.json):`);
+    }
+    const snapshotStartedAt = nowMs();
+    const snapshotRes = await runWithStreamingResult(
+      resolveRepoNpmScriptCommand(dir, "ops:export-reserved", "npm run ops:export-reserved"),
+      dir,
+      { printOutput: options.verbose }
+    );
+    const snapshotDurationMs = nowMs() - snapshotStartedAt;
+    if (snapshotRes.ok) {
+      repoReport.steps.push({
+        stepName: "reserved-subdomains snapshot",
+        status: "passed",
+        durationMs: snapshotDurationMs,
+      });
+      if (!options.verbose) {
+        console.log(`${repoName} reserved-subdomains snapshot passed`);
+      }
+    } else {
+      repoReport.steps.push({
+        stepName: "reserved-subdomains snapshot",
+        status: "skipped",
+        durationMs: snapshotDurationMs,
+      });
+      if (!options.verbose) {
+        console.log(
+          `${repoName} reserved-subdomains snapshot skipped (prod KV unavailable — commit ops/reserved-subdomains.json when export succeeds)`
+        );
+      }
+    }
+  }
+
   if (!options.verbose) {
     console.log(`${repoName} check (${resolveRepoCheckCommand(repoName, dir)}):`);
   }
@@ -2007,6 +2051,27 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     if (test.file && test.file !== "-") test.file = toWorkspaceRelativeDisplay(test.file);
   }
   repoReport.tests.push(...parsedTests);
+  if (repoName === "portal" && !options.skipPrTests) {
+    if (!options.verbose) {
+      console.log(`${repoName} PR suite (api + ui + perf):`);
+    }
+    const prRes = await recordCommandCheck(
+      summary,
+      failures,
+      `${repoName} test:pr`,
+      resolveRepoNpmScriptCommand(dir, "test:pr", "npm run test:pr"),
+      dir,
+      options
+    );
+    repoReport.steps.push({
+      stepName: "test:pr (api + ui + perf)",
+      status: prRes.ok ? "passed" : "failed",
+      durationMs: prRes.durationMs,
+    });
+    if (!options.verbose) {
+      console.log(`${repoName} test:pr ${prRes.ok ? "passed" : "failed"}`);
+    }
+  }
   const repoFailures = failures.filter((failure) => checkNameToRepo(failure.name) === repoName);
   printRepoExecutionSummary(repoName, repoReport, repoFailures, {
     liveTestTablePrinted: !options.verbose,
@@ -2084,6 +2149,7 @@ async function main() {
     `refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`
   );
   console.log(`verbose output: ${args.verbose ? "on" : "off"}`);
+  console.log(`portal PR suite (api/ui/perf): ${args.skipPrTests ? "skipped" : "on"}`);
 
   await printPreflightToolingAdvisories(targets);
 
