@@ -1,0 +1,92 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main, release]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: workspace-pr-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PACKAGES_PAT }}
+          submodules: recursive
+      - name: Mark suite in progress
+        uses: ./.github/actions/pr-suite-label
+        with:
+          label: ci
+          mode: add
+
+      - name: Validate workspace secret
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PACKAGES_TOKEN}" ]; then
+            echo "::error::Missing PACKAGES_PAT in the pylonline workspace repo."
+            echo "::error::It must allow private repo checkout and GitHub Packages reads."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Configure GitHub Packages auth
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          {
+            echo "@pylonline:registry=https://npm.pkg.github.com"
+            echo "//npm.pkg.github.com/:_authToken=${PACKAGES_TOKEN}"
+            echo "always-auth=true"
+          } > ~/.npmrc
+
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Show submodule status
+        run: pnpm run submodules:status
+
+      - name: Check workspace root
+        run: pnpm run check:workspace-root
+
+      - name: Check core-lint
+        run: pnpm --filter @pylonline/core-lint --fail-if-no-match run check
+
+      - name: Check core-ui
+        run: pnpm --filter @pylonline/core-ui --fail-if-no-match run check
+
+      - name: Check scripts
+        run: pnpm --filter @pylonline/scripts --fail-if-no-match run check
+
+      - name: Check portal
+        run: |
+          pnpm --filter @pylonline/portal --fail-if-no-match run core-ui:prepare
+          pnpm --filter @pylonline/portal --fail-if-no-match run ui:sync
+          pnpm --filter @pylonline/portal --fail-if-no-match run check
+
+      - name: Remove consumed suite label
+        if: ${{ always() && !cancelled() }}
+        uses: ./.github/actions/pr-suite-label
+        with:
+          label: ci
+          mode: remove
