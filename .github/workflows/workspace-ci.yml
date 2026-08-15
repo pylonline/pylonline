@@ -1,0 +1,84 @@
+# Compatibility shim for main's legacy `pr-label-rerun.yml` (pull_request_target).
+# That dispatcher still runs from default-branch until this PR merges and deletes it.
+# It POSTs workflow_dispatch to workspace-ci.yml on the PR head ref; without this
+# file (and its workflow_dispatch trigger) those calls 422 and show as a failed
+# "dispatch" check. Suite work itself is owned by pr-ci / pr-ut / pr-perf.
+#
+# After this PR lands on main (pr-label-rerun.yml gone), this shim is unused and
+# can be deleted.
+name: Workspace CI (legacy label dispatch shim)
+
+on:
+  workflow_dispatch:
+    inputs:
+      trigger_label:
+        description: "Rerun scope (from label or manual)"
+        required: false
+        default: all
+        type: choice
+        options: [all, ci, ut, perf, preflight]
+      pr_number:
+        description: "PR number for label cleanup (set by pr-label-rerun)"
+        required: false
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  forward:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Forward to suite workflows
+        uses: actions/github-script@v7
+        env:
+          TRIGGER_LABEL: ${{ inputs.trigger_label }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        with:
+          github-token: ${{ secrets.PACKAGES_PAT || github.token }}
+          script: |
+            const label = String(process.env.TRIGGER_LABEL || "all").trim() || "all";
+            const prNumber = String(process.env.PR_NUMBER || "").trim();
+            const { owner, repo } = context.repo;
+            const ref = context.ref.replace(/^refs\/heads\//, "");
+
+            const suiteMap = {
+              ci: ["pr-ci.yml"],
+              ut: ["pr-ut.yml"],
+              perf: ["pr-perf.yml"],
+              preflight: ["pr-ci.yml", "pr-ut.yml", "pr-perf.yml"],
+              all: ["pr-ci.yml", "pr-ut.yml", "pr-perf.yml"],
+            };
+            const workflows = suiteMap[label] || suiteMap.all;
+
+            let headSha = context.sha;
+            if (prNumber) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner, repo, pull_number: Number(prNumber),
+              });
+              headSha = pr.head.sha;
+            }
+
+            for (const workflow_id of workflows) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id, head_sha: headSha, per_page: 50,
+              });
+              const previous = data.workflow_runs
+                .filter((run) => run.event === "pull_request")
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+              if (previous && previous.status !== "completed") {
+                core.info(`${workflow_id} already running (run ${previous.id}); skip.`);
+                continue;
+              }
+              if (previous) {
+                await github.rest.actions.reRunWorkflow({ owner, repo, run_id: previous.id });
+                core.info(`Re-ran ${workflow_id} run ${previous.id} for label ${label}`);
+                continue;
+              }
+              await github.rest.actions.createWorkflowDispatch({
+                owner, repo, workflow_id, ref,
+              });
+              core.info(`Dispatched ${workflow_id} on ${ref} for label ${label}`);
+            }
