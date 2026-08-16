@@ -645,6 +645,43 @@ function refreshCoreLintConsumerLockfiles(repos, coreLintVersion = "") {
   return refreshed;
 }
 
+/**
+ * Repos held out of the preflight matrix still consume published @pylonline
+ * packages. Republishing a version keeps the same version number but changes
+ * the tarball checksum, so their lockfiles keep a `resolved` blob the registry
+ * no longer serves and CI fails `npm ci` with a 409 checksum mismatch. Refresh
+ * those lockfiles only; the rest of the repo stays gated.
+ */
+function refreshGatedConsumerLockfiles() {
+  const LOCKFILE_REFRESH_TIMEOUT_MS = 10 * 60 * 1000;
+  const gated = pylonPreflightEnabled() ? [] : ["pylon"];
+  const refreshed = [];
+  for (const repoName of gated) {
+    const dir = repoDir(repoName);
+    if (!fs.existsSync(path.join(dir, "package-lock.json"))) continue;
+    for (const packageName of ["@pylonline/core-lint", "@pylonline/core-ui"]) {
+      const pinnedVersion = resolveRepoDependencyVersion(dir, packageName);
+      if (!pinnedVersion) continue;
+      const command = `npm install "${packageName}@${pinnedVersion}" --package-lock-only --ignore-scripts --prefer-online --force --no-audit --no-fund`;
+      console.log(`\n=== Refresh npm lockfile checksums (${repoName}, preflight-gated) ===`);
+      console.log(`  ${command}`);
+      const result = runWithResult(command, dir, {
+        printOutput: true,
+        timeoutMs: LOCKFILE_REFRESH_TIMEOUT_MS,
+        npmLogLevel: "warn",
+      });
+      if (!result.ok) {
+        console.warn(
+          `  warning: could not refresh ${packageName} in ${repoName}; lockfile left unchanged.`
+        );
+        continue;
+      }
+      refreshed.push(`${repoName}:${packageName}`);
+    }
+  }
+  return refreshed;
+}
+
 function parseTapResultLine(line) {
   const trimmed = String(line || "").trim();
   let match = trimmed.match(/^ok\s+(\d+)\s+-\s+(.+)$/);
@@ -2204,6 +2241,16 @@ async function main() {
       name: "core-lint lockfile refresh",
       status: "passed",
       durationMs: nowMs() - refreshStart,
+    });
+  }
+
+  const gatedRefreshStart = nowMs();
+  const gatedRefreshed = refreshGatedConsumerLockfiles();
+  if (gatedRefreshed.length) {
+    summary.checks.push({
+      name: "gated repo lockfile refresh",
+      status: "passed",
+      durationMs: nowMs() - gatedRefreshStart,
     });
   }
 

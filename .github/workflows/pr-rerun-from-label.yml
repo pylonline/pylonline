@@ -1,0 +1,53 @@
+name: Suite Label Dispatcher
+
+# Re-runs the existing pull_request run for the labeled suite so the PR check
+# for that suite updates in place; other suites keep their current results.
+# Only a human/PAT label add reaches this workflow: labels applied by a suite
+# with GITHUB_TOKEN do not trigger further workflow runs.
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-suite:
+    if: ${{ contains(fromJSON('["ci","ut","perf"]'), github.event.label.name) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-run the labeled suite
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PACKAGES_PAT || github.token }}
+          script: |
+            const label = context.payload.label.name;
+            const workflow_id = { ci: "pr-ci.yml", ut: "pr-ut.yml", perf: "pr-perf.yml" }[label];
+            const { owner, repo } = context.repo;
+            const head = context.payload.pull_request.head;
+
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id, head_sha: head.sha, per_page: 50,
+            });
+            const previous = data.workflow_runs
+              .filter((run) => run.event === "pull_request")
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+            if (previous && previous.status !== "completed") {
+              core.info(`${label} is already running (run ${previous.id}); nothing to do.`);
+              return;
+            }
+
+            // Re-running the original pull_request run updates that suite's
+            // existing PR check instead of adding a second, unlinked run.
+            if (previous) {
+              await github.rest.actions.reRunWorkflow({ owner, repo, run_id: previous.id });
+              core.info(`Re-ran ${workflow_id} run ${previous.id} for label ${label}`);
+              return;
+            }
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner, repo, workflow_id, ref: head.ref,
+            });
+            core.info(`No pull_request run for ${head.sha}; dispatched ${workflow_id} on ${head.ref}`);
