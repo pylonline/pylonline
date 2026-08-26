@@ -174,6 +174,10 @@ See:
 - [docs/architecture/workspace/naming-conventions.md](docs/architecture/workspace/naming-conventions.md) for shared file-prefix naming conventions
 - [docs/runbooks/release/release-preflight.md](docs/runbooks/release/release-preflight.md) for the one-command release preflight workflow
 
+8/25/26
+<img width="1056" height="324" alt="image" src="https://github.com/user-attachments/assets/405eb892-063a-4525-8442-3afb6bab707e" />
+
+
 5/20/2026
 <img width="1096" height="355" alt="image" src="https://github.com/user-attachments/assets/673af168-0d99-45c3-bac5-64b3853c8def" />
 
