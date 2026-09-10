@@ -47,9 +47,11 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/settings` (signed-in); drawer gear `template-menu-drawer-settings-link` (often `#general`)
-- Body: `template-settings-page`
+- Route: `/secure/settings` (signed-in members on public worker); admin control plane: `/secure/admin/settings` (Summary, Profile, Sessions/Devices only)
+- Drawer gear `template-menu-drawer-settings-link` (often `#general`); admin drawer also lists text **Settings**
+- Body: `template-settings-page` (admin adds `template-admin template-admin-settings-page`)
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
+- Admin filter: `portal/src/pages/secure/settings-admin-filter.ts` (`data-settings-mode="admin"`)
 
 ## Key files
 

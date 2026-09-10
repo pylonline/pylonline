@@ -1,6 +1,6 @@
 ---
 name: page-support-inbox
-description: Use when working on the signed-in Support inbox (/secure/support). Account-bound form and "Your support requests" threads. Not the public Support page (/support).
+description: Use when working on the signed-in Support inbox (/secure/support). Account-bound form and "Open Support Requests" / "Closed Support Requests" threads. Not the public Support page (/support).
 model: inherit
 ---
 
@@ -15,7 +15,7 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Shared look/behavior → `core-ui/assets/css/template-contract/` and `core-ui/assets/js/template/`
 - One route/page → `portal/static/assets/css/route-overrides/` or `portal/static/assets/js/route-*`
 - Table column layout → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
-- Support inbox UI (threads, badges, reply actions) → `core-ui/assets/css/template-contract/primitives/template-support-records.css`, scoped to `table[aria-label="Support requests"]`
+- Support inbox UI (threads, badges, reply actions) → `core-ui/assets/css/template-contract/primitives/template-support-records.css`, scoped to `table[aria-label="Support requests"]` and `table[aria-label="Closed support requests"]`
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
 Stay on this page's files unless the task requires a shared contract change.
@@ -65,5 +65,5 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 ## When invoked
 
 1. Read the UI ownership guide and this page's HTML/JS/CSS.
-2. Scope inbox selectors to `table[aria-label="Support requests"]`. Do not mirror column layouts in route-overrides.
+2. Scope inbox selectors to `table[aria-label="Support requests"]` and `table[aria-label="Closed support requests"]`. Do not mirror column layouts in route-overrides.
 3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` (including table-profiles contract tests when columns change).
