@@ -13,6 +13,8 @@
     "files.autoSave": "onFocusChange",
     "git.autoRepositoryDetection": "subFolders",
     "git.detectSubmodules": true,
+    "npm.packageManager": "pnpm",
+    "npm.scriptRunner": "pnpm",
     "files.exclude": {
       "**/node_modules": true
     },

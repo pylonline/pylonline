@@ -16,11 +16,13 @@ Read **docs/architecture/ui/where-to-change-ui.md** and **docs/architecture/ui/u
 ## Key files
 
 - CSS: `core-ui/assets/css/template-contract/` (`.template-secure-action-btn` in secure/template-secure surfaces), `primitives/template-alt-auth-buttons.css`, cookie/banner button rules in `shell/template-cookie-banner.css`
-- Labels: `.template-secure-action-btn-label`, `.template-cookie-banner-btn-label`
+- Submit label fit: `primitives/template-card-insecure-adaptive.css` + `assets/js/template/components/submit-label.js` / `control-ui.js`
+- Labels: `.template-card-submit-label`, `.template-secure-action-btn-label`, `.template-secure-action-btn-secondary-label`, `.template-cookie-banner-btn-label`
 
 ## When invoked
 
 1. Confirm the change is shared button chrome, not one page's label copy.
 2. Edit the contract files. Landing CTAs on `/` stay visually in this atom; Home page copy stays with **page-home**.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
-4. Tell the calling page agent what you changed.
+3. New text CTAs must wrap copy in the correct label span (never bare text inside `.template-card-submit`); prefer `createTemplateActionButton` / `renderTemplateActionButtonHtml`.
+4. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+5. Tell the calling page agent what you changed.
