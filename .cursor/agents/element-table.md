@@ -12,12 +12,31 @@ Read **docs/architecture/ui/where-to-change-ui.md** before changing table CSS.
 
 - Record table **shell** (scroller, borders, empty row) → `core-ui/assets/css/template-contract/primitives/template-secure-record-tables.css`
 - Record table **column layout** → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
-- Support inbox threads/badges/reply → `template-support-records.css` scoped to `table[aria-label="Support requests"]` — do not put column widths there
+- Support inbox threads/badges/reply → `template-support-records.css` scoped to support `aria-label`s below — do not put column widths there
 - Do not duplicate table profiles in route-overrides
+
+## Profiled `aria-label`s (non-exhaustive)
+
+Support / messages:
+
+- `Support requests`, `Closed support requests`
+- `Admin support requests`, `Public support requests`, `Member support requests`
+- `Alerts`, `Billing messages`
+- `Communication stats`, `Support request stats`
+
+Other:
+
+- `Newsletter subscribers` (and related newsletter admin tables)
+- `Active devices`
+- `Unassigned consultations`, `Assigned consultations`
+
+Emerging (page JS already uses; move column CSS into profiles when touched):
+
+- `Subscriptions`, `Entitlement requests` — **page-subscription** (widths may still be in route-override today)
 
 ## Key files
 
-- CSS: `template-secure-record-tables.css`, `template-table-profiles.css`, `template-data-table-primitives.css`, `template-data-table-columns.css`
+- CSS: `template-secure-record-tables.css`, `template-table-profiles.css`, `template-data-table-primitives.css`, `template-data-table-columns.css`, `template-support-records.css`
 - JS: `core-ui/assets/js/template/components/table.js`
 - Inline rails / wheel trap → **element-table-scrollbar** (`table-scrollbars.js`), not this agent
 - Tests: `portal/tests/unit/css/table-profiles-contract.test.mjs`

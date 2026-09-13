@@ -13,7 +13,7 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Shared look/behavior → `core-ui/assets/css/template-contract/` and `core-ui/assets/js/template/`
 - One route/page → `portal/static/assets/css/route-overrides/` or `portal/static/assets/js/route-*`
 - Table column layout → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
-- Support inbox UI (threads, badges, reply actions) → `template-support-records.css`, scoped to `table[aria-label="Support requests"]`
+- Support inbox UI (threads, badges, reply actions) → `template-support-records.css`, scoped to `table[aria-label="Support requests"]` (and closed/admin/public/member variants when present)
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
 Stay on this page's files unless the task requires a shared contract change. Admin Communication workspace is a different agent.
@@ -51,7 +51,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 - Route: `/secure/messages` (signed-in); hash `#support-requests` in some drawer links
 - Body: `template-settings-page template-messages-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
-- Table `aria-label`: `Secure messages`
+- Section is messages; **tables** use `aria-label`s such as `Support requests`, `Alerts`, `Billing messages` (not a single “Secure messages” table label)
 
 ## Key files
 

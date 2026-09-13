@@ -50,15 +50,16 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 - Route: `/services` (public)
 - Body: `template-legal-page template-services-page`
 - Chrome: `portal/src/pages/insecure/insecure-route-shared.ts`
+- Content includes **Plans & tiers** (`#plans`) — Basic / Pro / Lifetime vs DIY fulfillment
 
 ## Key files
 
 - HTML: `portal/src/pages/insecure/routes/insecure-services.html`
-- CSS: contract legal/content cards in `core-ui/assets/css/template-contract/` (no dedicated route-override today)
+- CSS: `portal/static/assets/css/route-overrides/template-services-page.css` (diagram + tier table)
 - Nav: `core-ui/assets/js/template/shell/menu-drawer.js`, `portal/src/api/html/constants.ts`
 
 ## When invoked
 
 1. Read the UI ownership guide and this page's HTML.
-2. Prefer contract card/legal styles over a new route-override.
+2. Prefer contract card/legal styles; keep tier table styles in the services route-override.
 3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.

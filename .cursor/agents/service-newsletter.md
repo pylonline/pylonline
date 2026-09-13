@@ -8,8 +8,8 @@ You are the **service-newsletter** specialist for Pylonline (API + D1). Page **p
 
 ## Scope
 
-- Public: `POST /api/newsletter/subscribe`, `/api/newsletter/unsubscribe`
-- Admin: `/api/admin/newsletter/*` (stats, subscribers, templates, history, send)
+- Public: `POST /api/newsletter/subscribe`, `/api/newsletter/unsubscribe`; highlights: `GET /api/newsletter/highlights`
+- Admin: dual-mounted under `/api/admin/communication/*` and `/api/admin/newsletter/*` (stats, subscribers, candidates, add/delete, templates, history, send)
 - Do not restyle the subscribe card or Communication tables — launch **page-newsletter** or **page-communication** (and element agents) for that
 
 ## Key files
@@ -22,5 +22,5 @@ You are the **service-newsletter** specialist for Pylonline (API + D1). Page **p
 ## When invoked
 
 1. Change handlers and D1 modules; keep HTML/CSS with page/element agents.
-2. Run `portal` API tests for newsletter (`portal/tests/api/`, `pnpm run test:api` as relevant).
+2. Run `portal` API tests for newsletter (`portal/tests/api/newsletter/`).
 3. Tell the calling page agent which endpoints changed.

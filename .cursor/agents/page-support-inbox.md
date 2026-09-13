@@ -15,7 +15,7 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Shared look/behavior → `core-ui/assets/css/template-contract/` and `core-ui/assets/js/template/`
 - One route/page → `portal/static/assets/css/route-overrides/` or `portal/static/assets/js/route-*`
 - Table column layout → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
-- Support inbox UI (threads, badges, reply actions) → `core-ui/assets/css/template-contract/primitives/template-support-records.css`, scoped to `table[aria-label="Support requests"]` and `table[aria-label="Closed support requests"]`
+- Support inbox UI (threads, badges, reply actions) → `core-ui/assets/css/template-contract/primitives/template-support-records.css`, scoped to support table `aria-label`s (member open/closed; also shared with admin/public/member variants in the contract)
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
 Stay on this page's files unless the task requires a shared contract change.
@@ -46,7 +46,8 @@ Keep this agent on route HTML, route-overrides, and page-specific JS. Page-eleme
 
 Handlers, D1, and webhooks belong to **service** agents. If the task is API or data, launch the matching one instead of editing `portal/src/api/` from this page agent:
 
-- **service-newsletter**, **service-messages** (includes support), **service-subscription**, **service-billing**, **service-auth**, **service-account**, **service-maintenance**, **service-downloads**, **service-email**, **service-database**, **service-observability** (metrics, audit, logs)
+- **service-messages** (includes support) — primary
+- Also: **service-newsletter**, **service-subscription**, **service-billing**, **service-auth**, **service-account**, **service-maintenance**, **service-downloads**, **service-email**, **service-database**, **service-observability**
 
 ## Surface
 
@@ -54,16 +55,18 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 - Body: `template-settings-page template-support-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 - Section `aria-label`: `Secure support`
+- Tables: `Support requests`, `Closed support requests`
 
 ## Key files
 
 - HTML: `portal/src/pages/secure/routes/member/secure-support.html`
 - JS: `portal/static/assets/js/route-insecure/support.js` (shared form), `portal/static/assets/js/route-secure-support/index.js` (wired in `HEAD_SECURE_SUPPORT`)
-- CSS: `portal/static/assets/css/route-overrides/template-secure-support-page.css`, `portal/static/assets/css/route-overrides/template-secure-messages-page.css`
+- CSS: `portal/static/assets/css/route-overrides/template-secure-support-page.css`
 - Contract inbox: `core-ui/assets/css/template-contract/primitives/template-support-records.css`
+- Shell test: `portal/tests/unit/pages/secure-support-shell.test.mjs`
 
 ## When invoked
 
 1. Read the UI ownership guide and this page's HTML/JS/CSS.
-2. Scope inbox selectors to `table[aria-label="Support requests"]` and `table[aria-label="Closed support requests"]`. Do not mirror column layouts in route-overrides.
+2. Scope inbox selectors to the correct `table[aria-label]` values. Do not mirror column layouts in route-overrides.
 3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` (including table-profiles contract tests when columns change).

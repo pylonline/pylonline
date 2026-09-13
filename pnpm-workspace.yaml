@@ -2,6 +2,7 @@ packages:
   - "core-lint"
   - "core-ui"
   - "portal"
+  - "portal/packages/*"
   - "pylon"
   - "scripts"
 

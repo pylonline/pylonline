@@ -18,9 +18,9 @@ Cursor only loads `*.md` at the **root** of **[`.cursor/agents/`](.cursor/agents
 
 Invoke with the filename:
 
-- `/page-about`, `/page-cookie-popup`, `/page-support-inbox`, `/page-consultation`
-- `/element-footer`, `/element-table-scrollbar`
-- `/service-account`, `/service-newsletter`, `/service-consultation`
+- `/page-about`, `/page-cookie-popup`, `/page-support-inbox`, `/page-consultation`, `/page-subscription`, `/page-service-requests`
+- `/element-footer`, `/element-table-scrollbar`, `/element-table`
+- `/service-account`, `/service-newsletter`, `/service-consultation`, `/service-subscription`, `/service-billing`
 
 | Prefix | Role |
 |--------|------|
@@ -35,7 +35,7 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 | `page-home`, `page-services`, `page-newsletter`, `page-support`, `page-consultation`, `page-about`, `page-demo`, `page-faq` | `/`, `/services`, `/newsletter`, `/support`, `/consultation`, `/about`, `/demo`, `/faq` |
 | `page-sign-in`, `page-sign-up`, `page-registration`, `page-verification`, `page-password-recovery` | `/signin`, `/signup`, `/registration`, verify family, forgot/reset |
 | `page-legal`, `page-not-found` | `/terms` and other policies, `/not-found` |
-| `page-subscription`, `page-downloads`, `page-messages`, `page-support-inbox`, `page-docs`, `page-app`, `page-dashboard` | `/secure/…` |
+| `page-subscription`, `page-service-requests`, `page-downloads`, `page-messages`, `page-support-inbox`, `page-docs`, `page-app`, `page-dashboard` | `/secure/…` |
 | `page-communication`, `page-administration`, `page-database`, `page-metrics`, `page-audit`, `page-logs`, `page-api` | `/secure/admin/…` |
 | `page-settings`, `page-maintenance`, `page-cookie-popup` | `/secure/settings`, `/maintenance`, cookie overlay |
 
@@ -47,10 +47,19 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 
 | Service agents | Owns |
 |----------------|------|
-| `service-newsletter`, `service-messages`, `service-consultation`, `service-subscription`, `service-billing` | List/campaigns; messages+support; consultation booking/Calendar; plans/checkout; payment methods and non-plan charges |
-| `service-auth`, `service-account` | Sign-in/session/OTP; profile/privacy/devices/cookies |
+| `service-newsletter` | Subscribe/unsubscribe, admin campaigns (`/api/admin/communication/*` and `/api/admin/newsletter/*`) |
+| `service-messages` | Member messages + public/secure support + admin support inbox |
+| `service-consultation` | Booking/Calendar; admin assign/accept/reject/cancel/reschedule/sync |
+| `service-subscription` | Plans, **entitlements**, checkout, install codes, subdomain policy (tiers `lifetime`/`basic`/`pro`) |
+| `service-billing` | Payment methods, setup intents, shared Stripe webhook ingress (not plan lifecycle) |
+| `service-auth`, `service-account` | Sign-in/session/OTP/passkeys/OAuth; profile/privacy/devices/cookies |
 | `service-maintenance`, `service-downloads`, `service-email` | Status/windows; secure files; Resend |
 | `service-database`, `service-observability` | Admin D1 browser APIs; metrics/audit/logs APIs |
+
+### Notes
+
+- **Entitlements** stay under `service-subscription` + `page-subscription` (spec: [subscription-entitlements.md](docs/architecture/portal/subscription-entitlements.md)). No separate monitor agent until register HTTP exists.
+- Service test manifests live in `portal/tests/services/<name>/manifest.json`. Manifest folder names may differ from agent names: `payments` ↔ `service-billing`, `scheduling` ↔ `service-consultation`. Run with `npm run test:service:<name>` from `portal/`.
 
 ## Backend and non-UI
 
@@ -66,4 +75,5 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 ## Tests
 
 - After CSS boundary changes, run relevant unit tests under `portal/tests/unit/css/`.
+- Per-service suites: `npm run test:service:auth|payments|messages|scheduling|subscription|all` (from `portal/`).
 - Portal test matrix and commands: **[docs/runbooks/portal/portal-test-plan/](docs/runbooks/portal/portal-test-plan/)**; quick reference in [portal/README.md](portal/README.md) (`pnpm run test:unit`, `test:runtime`, `test:api`, `test:ui`).

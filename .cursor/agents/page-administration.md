@@ -1,6 +1,6 @@
 ---
 name: page-administration
-description: Use when working on the Administration page (/secure/admin/administration). Maintenance schedule, members, and admin runtime actions.
+description: Use when working on the Administration page (/secure/admin/administration). Dashboard, maintenance, members, subdomains, and consultation inbox.
 model: inherit
 ---
 
@@ -17,7 +17,6 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
 Stay on this page's files unless the task requires a shared contract change. The public `/maintenance` status page belongs to the **page-maintenance** agent; schedule/windows on this page stay here.
-
 
 ## Page-element agents
 
@@ -44,19 +43,32 @@ Keep this agent on route HTML, route-overrides, and page-specific JS. Page-eleme
 
 Handlers, D1, and webhooks belong to **service** agents. If the task is API or data, launch the matching one instead of editing `portal/src/api/` from this page agent:
 
-- **service-newsletter**, **service-messages** (includes support), **service-consultation**, **service-subscription**, **service-billing**, **service-auth**, **service-account**, **service-maintenance**, **service-downloads**, **service-email**, **service-database**, **service-observability** (metrics, audit, logs)
+- **service-maintenance** — maintenance windows / status updates
+- **service-consultation** — assign/accept/reject/cancel/reschedule/sync
+- **service-subscription** — subdomain / reserved-subdomain APIs and domain policy
+- **service-account** — member profile fields when admin updates users
+- Also: **service-newsletter**, **service-messages**, **service-billing**, **service-auth**, **service-downloads**, **service-email**, **service-database**, **service-observability**
 
 ## Surface
 
-- Route: `/secure/admin/administration` (admin); maintenance hash `#maintenance`; consultation hash `#consultation`
+- Route: `/secure/admin/administration` (admin control plane)
+- Sections / hashes: `#dashboard`, `#maintenance`, `#members`, `#subdomains`, `#consultation`
 - Body: `template-admin-actions-page template-admin-administration-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 - Workspace `aria-label`: `Admin administration workspace`
 
+### Notable tables
+
+`Recent members`, `Members`, `Recent subdomains`, `Member subdomains`, `Reserved subdomains`, `Unassigned consultations`, `Assigned consultations`
+
+### Gap
+
+Admin **entitlements** chrome is not on this page yet (APIs exist under **service-subscription**). When building it, either extend this page or add a dedicated admin surface — document the choice in the PR.
+
 ## Key files
 
 - HTML: `portal/src/pages/secure/routes/admin/admin-actions.html`
-- JS: `portal/static/assets/js/route-admin-administration/` (`index.js`, `dashboard.js`, `consultation.js`)
+- JS: `portal/static/assets/js/route-admin-administration/` (`index.js`, `tabs.js`, `dashboard.js`, `members.js`, `subdomains.js`, `consultation.js`)
 - CSS: `portal/static/assets/css/route-overrides/template-admin-administration-page.css`, `portal/static/assets/css/route-overrides/template-admin-runtime-page.css`
 - Related: `portal/static/assets/js/route-admin/runtime-records.js`
 

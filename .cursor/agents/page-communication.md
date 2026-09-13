@@ -13,7 +13,7 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Shared look/behavior → `core-ui/assets/css/template-contract/` and `core-ui/assets/js/template/`
 - One route/page → `portal/static/assets/css/route-overrides/` or `portal/static/assets/js/route-*`
 - Table column layout → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
-- Support inbox UI (threads, badges, reply actions) → `template-support-records.css`, scoped to `table[aria-label="Support requests"]`
+- Support inbox UI (threads, badges, reply actions) → `template-support-records.css`, scoped to admin/public/member support `aria-label`s (e.g. `Admin support requests`), not only the member `Support requests` label
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
 Stay on this page's files unless the task requires a shared contract change. Public `/newsletter` belongs to the **page-newsletter** agent.

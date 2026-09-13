@@ -1,6 +1,6 @@
 ---
 name: page-docs
-description: Use when working on the Docs page (/secure/docs). Signed-in member docs (stub page today).
+description: Use when working on the Docs page (/secure/docs). Signed-in member docs (DIY install pipeline, slides).
 model: inherit
 ---
 
@@ -48,14 +48,15 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 ## Surface
 
 - Route: `/secure/docs` (signed-in)
-- Body: secure shell only (`template-page template-secure template-no-background`)
-- Chrome: `portal/src/pages/secure/secure-route-shared.ts`
-- Status: stub page ("Secure Docs") — grow it in place rather than inventing a parallel docs surface
+- Body: `template-page template-secure template-no-background template-docs-page`
+- Chrome: `portal/src/pages/secure/secure-route-shared.ts` (`HEAD_SECURE_DOCS`)
+- Content: customer DIY installation pipeline (USB + manual), tier notes, links to browser deck + `.pptx`
 
 ## Key files
 
 - HTML: `portal/src/pages/secure/routes/member/secure-docs.html`
-- CSS/JS: no dedicated route-override or route JS today; add `portal/static/assets/css/route-overrides/` / `portal/static/assets/js/route-*` only for true page-specific deltas
+- CSS: `portal/static/assets/css/route-overrides/template-secure-docs-page.css`
+- Slides: `portal/static/assets/docs/pylon-customer-install-deck.html`, `pylon-customer-install.pptx`
 
 ## When invoked
 

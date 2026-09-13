@@ -1,6 +1,6 @@
 ---
 name: page-settings
-description: Use when working on Settings (/secure/settings). Signed-in profile, privacy, notifications, cookie preferences, and devices. Drawer gear, not a text nav label.
+description: Use when working on Settings (/secure/settings). Signed-in profile, privacy, notifications, cookie preferences, devices, security, and payment methods. Drawer gear, not a text nav label.
 model: inherit
 ---
 
@@ -48,6 +48,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 ## Surface
 
 - Route: `/secure/settings` (signed-in members on public worker); admin control plane: `/secure/admin/settings` (Summary, Profile, Sessions/Devices only)
+- Member tabs include profile, privacy, notifications, cookie preferences, devices/security, and **payment methods** (APIs → **service-billing**; profile/privacy/devices → **service-account**)
 - Drawer gear `template-menu-drawer-settings-link` (often `#general`); admin drawer also lists text **Settings**
 - Body: `template-settings-page` (admin adds `template-admin template-admin-settings-page`)
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
