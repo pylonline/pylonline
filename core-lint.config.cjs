@@ -1,7 +1,7 @@
 "use strict";
 
 module.exports = {
-  lintRoots: ["config"],
+  lintRoots: ["config", "core-lint.config.cjs", "wrang-release.cjs"],
   stylelintRoots: [],
   formatRoots: [
     ".github",
@@ -12,5 +12,6 @@ module.exports = {
     "core-lint.config.cjs",
     "package.json",
     "pnpm-workspace.yaml",
+    "wrang-release.cjs",
   ],
 };

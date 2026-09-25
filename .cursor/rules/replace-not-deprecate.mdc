@@ -1,0 +1,18 @@
+---
+description: Prefer deleting old implementations over dual-path / deprecated keepalives
+alwaysApply: true
+---
+
+# Replace, do not deprecate
+
+Pylonline is pre-sales R&D. Do **not** keep old implementations around for
+backward compatibility unless the user explicitly asks to preserve them.
+
+When a change introduces a new path (Worker split, handler, UI flow, flag):
+
+1. **Land the new path** as the only path when the user says it works / asks to cut over.
+2. **Delete** the superseded implementation in the same effort (or immediately after), not behind a “legacy” / “deprecated” forever-flag.
+3. Do **not** leave dual branches (`if (NEW_FLAG) … else old…`) as a long-term state. Cutover flags are temporary; remove the flag and the old branch together when cutting over.
+4. Do **not** add compatibility shims, soft-deprecation comments, or “keep for now” stubs unless the user requested them.
+
+If unsure whether something is still required for deployed envs or local tooling, ask once — default is **remove**.

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    "portal": {
+      "entry": [
+        "src/index*.ts",
+        "scripts/**/*.{cjs,mjs,js}",
+        "tests/**/*.{mjs,cjs,ts}",
+        "playwright*.config.{ts,mjs,cjs}"
+      ],
+      "project": ["src/**/*.ts", "scripts/**/*.{cjs,mjs,js}"],
+      "ignore": ["static/**", ".generated/**"],
+      "ignoreDependencies": ["esbuild", "wrangler", "playwright", "playwright-core"]
+    },
+    "portal/packages/*": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    }
+  }
+}

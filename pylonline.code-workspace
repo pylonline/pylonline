@@ -22,6 +22,21 @@
       "**/node_modules": true,
       "**/.generated": true,
       "pnpm-lock.yaml": true
-    }
+    },
+    "eslint.workingDirectories": [{ "mode": "auto" }],
+    "eslint.options": { "overrideConfigFile": "config/eslint.config.mjs" },
+    "prettier.configPath": "config/prettier.config.cjs",
+    "prettier.ignorePath": "config/.prettierignore",
+    "stylelint.configFile": "config/stylelint.config.cjs",
+    "stylelint.validate": ["css"],
+    "css.validate": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "stylelint.vscode-stylelint"
+    ]
   }
 }

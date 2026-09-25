@@ -37,7 +37,7 @@ Checkout today: **basic/pro DIY** via Stripe recurring checkout. **Lifetime** an
 - API: `portal/src/api/subscription/entitlements.ts`
 - Domain (pure): `portal/src/domains/subscription/entitlementState.ts`
 - D1: `portal/src/db/site/account/entitlements.ts`
-- Migration: `portal/migrations/0023_subscription_entitlements.sql`, `0024_entitlement_provider_subscription_ref.sql`
+- Migration: `portal/migrations/product/0009_subscription_entitlements.sql`
 - Routes: `portal/src/api/routes/definitions/account.ts`, `.../admin.ts`, `.../public.ts` (`/v1/monitor/*`)
 
 Admin entitlement APIs live on the **control-plane (admin) worker**. Member create/list live on the **public worker**.

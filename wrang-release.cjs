@@ -7,8 +7,16 @@ const https = require("node:https");
 const path = require("node:path");
 
 const ROOT = __dirname;
-const VALID_REPOS = new Set(["workspace", "core-lint", "core-ui", "portal", "pylon", "scripts"]);
-const CORE_LINT_CONSUMERS = ["core-ui", "portal", "pylon", "scripts"];
+const VALID_REPOS = new Set([
+  "workspace",
+  "core-lint",
+  "core-ui",
+  "portal",
+  "pylon",
+  "scripts",
+  "docs",
+]);
+const CORE_LINT_CONSUMERS = ["core-ui", "portal", "pylon", "scripts", "docs"];
 let cachedPnpmExecutable = null;
 let cachedPreflightNodeBinDir = undefined;
 
@@ -86,7 +94,7 @@ function pylonPreflightEnabled() {
 }
 
 function preflightRepoOrder() {
-  const order = ["core-lint", "core-ui", "scripts", "portal"];
+  const order = ["core-lint", "core-ui", "scripts", "docs", "portal"];
   if (pylonPreflightEnabled()) order.push("pylon");
   return order;
 }
@@ -100,6 +108,54 @@ function preflightCoreUiConsumers() {
 const STANDARD_TABLE_WIDTH = 150;
 /** Column inner widths for the streaming TAP test table; must satisfy `computeBorderLen` = STANDARD_TABLE_WIDTH. */
 const LIVE_TEST_TABLE_WIDTHS = [5, 10, 56, 66];
+
+/** Full per-check output lives here (`.cache/` is gitignored); the terminal shows excerpts. */
+const PREFLIGHT_LOG_ROOT = path.join(ROOT, ".cache", "preflight");
+const PREFLIGHT_LOG_RUNS_KEPT = 10;
+let preflightLogDir = "";
+let preflightLogSeq = 0;
+
+function initPreflightLogDir() {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
+  preflightLogDir = path.join(PREFLIGHT_LOG_ROOT, stamp);
+  fs.mkdirSync(preflightLogDir, { recursive: true });
+  const latest = path.join(PREFLIGHT_LOG_ROOT, "latest");
+  fs.rmSync(latest, { force: true });
+  fs.symlinkSync(stamp, latest);
+  const runs = fs
+    .readdirSync(PREFLIGHT_LOG_ROOT)
+    .filter((entry) => entry !== "latest")
+    .sort();
+  for (const old of runs.slice(0, Math.max(0, runs.length - PREFLIGHT_LOG_RUNS_KEPT))) {
+    fs.rmSync(path.join(PREFLIGHT_LOG_ROOT, old), { recursive: true, force: true });
+  }
+  // Consumed by portal `test:pr` so each Worker phase keeps its own log.
+  process.env.PORTAL_PR_LOG_DIR = path.join(preflightLogDir, "workers", "portal");
+  return preflightLogDir;
+}
+
+function writeCheckLog(name, command, cwd, result, durationMs) {
+  if (!preflightLogDir) return "";
+  preflightLogSeq += 1;
+  const slug = String(name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  const repo = checkNameToRepo(name);
+  const dir = path.join(preflightLogDir, "checks", repo);
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${String(preflightLogSeq).padStart(2, "0")}-${slug}.log`);
+  const header = [
+    `check: ${name}`,
+    `command: ${command}`,
+    `cwd: ${path.relative(ROOT, cwd) || "."}`,
+    `exit: ${result.status}${result.timedOut ? " (timed out)" : ""}`,
+    `duration: ${formatDuration(durationMs)}`,
+  ].join("\n");
+  const body = `${header}\n\n--- stdout ---\n${result.stdout || ""}\n--- stderr ---\n${result.stderr || ""}\n`;
+  fs.writeFileSync(file, body, "utf8");
+  return path.relative(ROOT, file);
+}
 
 /** Strip workspace root from log text so CI/local output does not leak absolute paths. */
 function sanitizeLogPaths(text) {
@@ -338,7 +394,20 @@ function buildPreflightChildEnv(options = {}) {
   if (nodeBinDir) {
     childEnv.PATH = `${nodeBinDir}${path.delimiter}${childEnv.PATH || ""}`;
   }
+  prependUserLocalBin(childEnv);
   return childEnv;
+}
+
+/** Cursor terminals often omit ~/.local/bin (gitleaks). Keep it on child PATH. */
+function prependUserLocalBin(env) {
+  const localBin = path.join(process.env.HOME || "", ".local", "bin");
+  if (!localBin || !fs.existsSync(localBin)) return env;
+  const current = String(env.PATH || process.env.PATH || "");
+  const parts = current.split(path.delimiter).filter(Boolean);
+  if (!parts.includes(localBin)) {
+    env.PATH = `${localBin}${current ? `${path.delimiter}${current}` : ""}`;
+  }
+  return env;
 }
 
 function run(command, cwd = ROOT) {
@@ -440,9 +509,7 @@ async function runWithStreamingResult(command, cwd = ROOT, options = {}) {
         command,
         cwd,
         stdout,
-        stderr: timedOut
-          ? `${stderr}\nCommand timed out after ${timeoutMs}ms`.trim()
-          : stderr,
+        stderr: timedOut ? `${stderr}\nCommand timed out after ${timeoutMs}ms`.trim() : stderr,
         timedOut,
       });
     });
@@ -609,9 +676,7 @@ function refreshCoreLintConsumerLockfiles(repos, coreLintVersion = "") {
     const lockPath = path.join(dir, "package-lock.json");
     if (!fs.existsSync(lockPath)) continue;
     const pinnedVersion =
-      coreLintVersion ||
-      resolveRepoDependencyVersion(dir, "@pylonline/core-lint") ||
-      "";
+      coreLintVersion || resolveRepoDependencyVersion(dir, "@pylonline/core-lint") || "";
     if (
       pinnedVersion &&
       coreLintPinsEquivalent(
@@ -620,7 +685,9 @@ function refreshCoreLintConsumerLockfiles(repos, coreLintVersion = "") {
       )
     ) {
       console.log(`\n=== Refresh npm lockfile checksums (${repoName}) ===`);
-      console.log(`  skipped (package-lock.json already resolves @pylonline/core-lint@${pinnedVersion})`);
+      console.log(
+        `  skipped (package-lock.json already resolves @pylonline/core-lint@${pinnedVersion})`
+      );
       continue;
     }
     const command = pinnedVersion
@@ -736,7 +803,6 @@ function printLiveTestTableRow(testResult) {
 async function recordCommandCheck(summary, failures, name, command, cwd, options = {}) {
   const { verbose = false } = options;
   const startedAt = nowMs();
-  const onLine = options.onLine || null;
   const heartbeat = options.heartbeat || false;
   let heartbeatTimer = null;
   if (!verbose && heartbeat) {
@@ -773,10 +839,12 @@ async function recordCommandCheck(summary, failures, name, command, cwd, options
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   const status = result.ok ? "passed" : "failed";
   const durationMs = nowMs() - startedAt;
+  const logPath = writeCheckLog(name, command, cwd, result, durationMs);
   summary.checks.push({
     name,
     status,
     durationMs,
+    ...(logPath ? { logPath } : {}),
   });
   if (!result.ok) {
     const location = path.relative(ROOT, cwd) || ".";
@@ -792,6 +860,7 @@ async function recordCommandCheck(summary, failures, name, command, cwd, options
       location,
       command,
       exitCode: result.status,
+      ...(logPath ? { logPath } : {}),
       ...(failureExcerpt ? { failureExcerpt } : {}),
       ...details,
     });
@@ -869,7 +938,7 @@ function checkNameToRepo(checkName) {
     return "workspace";
   }
   if (checkName.startsWith("workspace")) return "workspace";
-  const repos = ["core-lint", "core-ui", "scripts", "portal", "pylon"];
+  const repos = ["core-lint", "core-ui", "scripts", "docs", "portal", "pylon"];
   for (const repo of repos) {
     if (checkName.startsWith(`${repo} `) || checkName === repo) return repo;
   }
@@ -877,7 +946,7 @@ function checkNameToRepo(checkName) {
 }
 
 function computeRepoStatuses(checks) {
-  const order = ["workspace", "core-lint", "core-ui", "scripts", "portal", "pylon"];
+  const order = ["workspace", "core-lint", "core-ui", "scripts", "docs", "portal", "pylon"];
   const statuses = {};
   for (const repo of order) {
     statuses[repo] = {
@@ -970,8 +1039,106 @@ function printRepoStatusTable(checks, repoReports) {
   printSimpleTable(headers, displayRows, { separatorBeforeLastRow: true });
 }
 
+function writePreflightSummaryFile(args, summary, failures, totalMs) {
+  if (!preflightLogDir) return "";
+  const counts = summarizeCheckCounts(summary.checks);
+  const failedTests = collectFailedTestsByRepo(summary.repoReports);
+  const displayFailures = dedupeFailuresForDisplay(failures);
+  const repoRows = computeRepoStatuses(summary.checks);
+  for (const row of repoRows) {
+    const report = summary.repoReports[row.repo];
+    if (!report || !Array.isArray(report.tests)) continue;
+    for (const test of report.tests) {
+      row.testsTotal += 1;
+      if (test.status === "failed") row.testsFailed += 1;
+      else if (test.status === "passed") row.testsPassed += 1;
+    }
+  }
+
+  const lines = [
+    `# Preflight ${path.basename(preflightLogDir)}`,
+    "",
+    `- result: ${failures.length ? "FAILED" : "PASSED"}`,
+    `- duration: ${formatDuration(totalMs)}`,
+    `- checks: passed ${counts.passed} | failed ${counts.failed} | skipped ${counts.skipped}`,
+    `- target: ${args.repo}`,
+    "",
+    "## Layout",
+    "",
+    "- `SUMMARY.md` — this file",
+    "- `checks/<repo>/` — full stdout/stderr for each preflight step",
+    "- `workers/portal/` — portal `test:pr` wrangler logs (one file per phase × plane)",
+    "",
+    "Portal `test:pr` starts **public** (with hop Workers auth, payments, dispatcher in the same process) and **admin/control** (with its own auth + dispatcher). There is no standalone monitor or pylon wrangler process in this suite.",
+    "",
+    "- **monitor** is a portal Worker (`wrangler.monitor.toml`) used in deploy/ops. Local API tests hit `/api/monitor/*` through the public Worker, not a separate monitor process.",
+    "- **pylon** is the desktop/device app (separate repo). Its `npm test` output is under `checks/pylon/`, not `workers/`.",
+    "",
+    "## Repos",
+    "",
+    "| repo | status | tests ok | tests fail | tests total |",
+    "| --- | --- | ---: | ---: | ---: |",
+  ];
+  for (const row of repoRows) {
+    lines.push(
+      `| ${toRepoDisplayName(row.repo)} | ${row.status.toUpperCase()} | ${row.testsPassed} | ${row.testsFailed} | ${row.testsTotal} |`
+    );
+  }
+
+  lines.push("", "## Failed checks", "");
+  if (!displayFailures.length) {
+    lines.push("None.", "");
+  } else {
+    lines.push(
+      "| repo | exit | check | test | file | log |",
+      "| --- | ---: | --- | --- | --- | --- |"
+    );
+    for (const failure of displayFailures) {
+      lines.push(
+        `| ${failure.location || "."} | ${failure.exitCode ?? "-"} | ${failure.name || "-"} | ${failure.testName || "-"} | ${failure.filePath && !failure.filePath.includes("*") ? toTestFileDisplayPath(failure.filePath) : "-"} | ${failure.logPath || "-"} |`
+      );
+    }
+    lines.push("");
+    for (const failure of displayFailures) {
+      if (!failure.failureExcerpt) continue;
+      lines.push(
+        `### ${failure.name}`,
+        "",
+        "```",
+        sanitizeLogPaths(failure.failureExcerpt),
+        "```",
+        ""
+      );
+    }
+  }
+
+  lines.push("## Failed tests", "");
+  if (!failedTests.length) {
+    lines.push("None.", "");
+  } else {
+    lines.push("| repo | # | test | file |", "| --- | ---: | --- | --- |");
+    for (const test of failedTests) {
+      lines.push(`| ${test.repo} | ${test.id ?? "-"} | ${test.name} | ${test.file} |`);
+    }
+    lines.push("");
+  }
+
+  lines.push("## All checks", "");
+  lines.push("| status | duration | check | log |", "| --- | --- | --- | --- |");
+  for (const check of summary.checks) {
+    lines.push(
+      `| ${check.status.toUpperCase()} | ${formatDuration(check.durationMs)} | ${check.name} | ${check.logPath || "-"} |`
+    );
+  }
+  lines.push("");
+
+  const file = path.join(preflightLogDir, "SUMMARY.md");
+  fs.writeFileSync(file, lines.join("\n"), "utf8");
+  return path.relative(ROOT, file);
+}
+
 function collectFailedTestsByRepo(repoReports) {
-  const order = ["workspace", "core-lint", "core-ui", "scripts", "portal", "pylon"];
+  const order = ["workspace", "core-lint", "core-ui", "scripts", "docs", "portal", "pylon"];
   const failed = [];
   for (const repo of order) {
     const report = repoReports[repo];
@@ -1082,9 +1249,7 @@ function fetchLatestNodeVersionForMajor(major, timeoutMs = 10_000) {
           try {
             const entries = JSON.parse(body);
             const prefix = `v${major}.`;
-            const latest = entries.find((entry) =>
-              String(entry.version || "").startsWith(prefix)
-            );
+            const latest = entries.find((entry) => String(entry.version || "").startsWith(prefix));
             resolve(parsePinnedSemverVersion(String(latest?.version || "").replace(/^v/, "")));
           } catch (_error) {
             resolve("");
@@ -1364,8 +1529,7 @@ function printSimpleTable(headers, rows, options = {}) {
     maxTableWidth = STANDARD_TABLE_WIDTH,
     separatorBeforeLastRow = false,
   } = options;
-  const visibleLength = (value) =>
-    String(value ?? "").replace(/\x1b\[[0-9;]*m/g, "").length;
+  const visibleLength = (value) => String(value ?? "").replace(/\x1b\[[0-9;]*m/g, "").length;
 
   const processedRows = rows.map((row) =>
     row.map((cell, idx) => {
@@ -1442,11 +1606,7 @@ function printSimpleTable(headers, rows, options = {}) {
 
   for (let rowIdx = 0; rowIdx < processedRows.length; rowIdx += 1) {
     const row = processedRows[rowIdx];
-    if (
-      separatorBeforeLastRow &&
-      processedRows.length > 1 &&
-      rowIdx === processedRows.length - 1
-    ) {
+    if (separatorBeforeLastRow && processedRows.length > 1 && rowIdx === processedRows.length - 1) {
       console.log(border);
     }
     const lines = wrapRowToLines(row);
@@ -1456,7 +1616,6 @@ function printSimpleTable(headers, rows, options = {}) {
     }
   }
   console.log(border);
-
 }
 
 function printRepoExecutionSummary(repoName, repoReport, repoFailures = [], options = {}) {
@@ -1504,6 +1663,7 @@ function printRepoExecutionSummary(repoName, repoReport, repoFailures = [], opti
         console.log(sanitizeLogPaths(failure.failureExcerpt));
         console.log("--- end failure excerpt ---");
       }
+      if (failure.logPath) console.log(`full log: ${failure.logPath}`);
     }
   }
 }
@@ -1542,12 +1702,15 @@ function repoDir(repoName) {
 function resolveCoreUiPrepareCommand(repoName, options) {
   const dir = repoDir(repoName);
   const workspaceCoreUi = path.join(ROOT, "core-ui");
+  // Portal keeps prepare under scripts/core-ui/; pylon uses scripts/prepare-core-ui.cjs.
+  const prepareScript =
+    repoName === "pylon" ? "scripts/prepare-core-ui.cjs" : "scripts/core-ui/prepare-core-ui.cjs";
   if (fs.existsSync(path.join(workspaceCoreUi, "package.json"))) {
-    return `node scripts/core-ui/prepare-core-ui.cjs --source local --path ${JSON.stringify(workspaceCoreUi)}`;
+    return `node ${prepareScript} --source local --path ${JSON.stringify(workspaceCoreUi)}`;
   }
   if (options.coreUiConsumerSource === "repo-main") {
     const ref = String(options.coreUiConsumerRef || "main").trim() || "main";
-    return `node scripts/core-ui/prepare-core-ui.cjs --source remote --path ../core-ui --ref ${ref}`;
+    return `node ${prepareScript} --source remote --path ../core-ui --ref ${ref}`;
   }
   return resolveRepoNpmScriptCommand(dir, "core-ui:prepare", "npm run core-ui:prepare");
 }
@@ -1631,7 +1794,14 @@ async function runCheckWithAutoFormatFix(
 ) {
   const checksBefore = summary.checks.length;
   const failuresBefore = failures.length;
-  let checkRes = await recordCommandCheck(summary, failures, checkName, checkCommand, checkCwd, options);
+  let checkRes = await recordCommandCheck(
+    summary,
+    failures,
+    checkName,
+    checkCommand,
+    checkCwd,
+    options
+  );
   if (checkRes.ok || !formatCommand || !shouldAutoRunFormatFix(checkRes)) {
     return { checkRes, autoFixed: false, formatRes: null };
   }
@@ -1650,7 +1820,14 @@ async function runCheckWithAutoFormatFix(
     return { checkRes, autoFixed: false, formatRes };
   }
 
-  const retryRes = await recordCommandCheck(summary, failures, checkName, checkCommand, checkCwd, options);
+  const retryRes = await recordCommandCheck(
+    summary,
+    failures,
+    checkName,
+    checkCommand,
+    checkCwd,
+    options
+  );
   if (!retryRes.ok) {
     return { checkRes: retryRes, autoFixed: false, formatRes };
   }
@@ -1672,6 +1849,8 @@ function ensureRepoExists(repoName) {
 function repoNeedsCoreLintLockfileRefresh(dir) {
   const lockPath = path.join(dir, "package-lock.json");
   if (!fs.existsSync(lockPath)) return false;
+  // pnpm workspace packages use workspace:* — npm lockfile refresh cannot parse them.
+  if (repoUsesPnpmWorkspaceProtocol(dir)) return false;
   const pkgPath = path.join(dir, "package.json");
   if (!fs.existsSync(pkgPath)) return false;
   try {
@@ -1682,6 +1861,36 @@ function repoNeedsCoreLintLockfileRefresh(dir) {
   } catch (_error) {
     return false;
   }
+}
+
+/** True when package.json declares workspace:* deps (pnpm workspace; npm install fails). */
+function repoUsesPnpmWorkspaceProtocol(dir) {
+  const pkgPath = path.join(dir, "package.json");
+  if (!fs.existsSync(pkgPath)) return false;
+  try {
+    const pkg = readJson(pkgPath);
+    const all = { ...(pkg?.dependencies || {}), ...(pkg?.devDependencies || {}) };
+    return Object.values(all).some((value) => String(value || "").startsWith("workspace:"));
+  } catch (_error) {
+    return false;
+  }
+}
+
+/**
+ * Install command for a consumer repo. Portal (and similar) live in the root
+ * pnpm workspace and must not be installed with npm.
+ */
+function resolveRepoCiInstallCommand(repoName, dir) {
+  if (repoUsesPnpmWorkspaceProtocol(dir)) {
+    const filter =
+      repoName === "portal"
+        ? "@pylonline/portal..."
+        : repoName === "pylon"
+          ? "@pylonline/pylon..."
+          : `@pylonline/${repoName}...`;
+    return pnpm(`install --filter ${filter}`);
+  }
+  return "npm install --no-audit --no-fund";
 }
 
 function resolveRepoDependencyVersion(dir, packageName) {
@@ -1780,16 +1989,19 @@ async function runWorkspaceChecks(options, summary, failures) {
     durationMs: submoduleRes.durationMs,
   });
   printSubmoduleSummaryFromOutput(`${submoduleRes.stdout}\n${submoduleRes.stderr}`);
-  const { checkRes: rootRes, autoFixed: workspaceAutoFixed, formatRes: workspaceFormatRes } =
-    await runCheckWithAutoFormatFix(summary, failures, {
-      checkName: "workspace root check",
-      checkCommand: pnpm("run check:workspace-root"),
-      checkCwd: ROOT,
-      formatStepName: "workspace root format write",
-      formatCommand: pnpm("run format:write:workspace-root"),
-      formatCwd: ROOT,
-      options,
-    });
+  const {
+    checkRes: rootRes,
+    autoFixed: workspaceAutoFixed,
+    formatRes: workspaceFormatRes,
+  } = await runCheckWithAutoFormatFix(summary, failures, {
+    checkName: "workspace root check",
+    checkCommand: pnpm("run check:workspace-root"),
+    checkCwd: ROOT,
+    formatStepName: "workspace root format write",
+    formatCommand: pnpm("run format:write:workspace-root"),
+    formatCwd: ROOT,
+    options,
+  });
   if (workspaceFormatRes) {
     repoReport.steps.push({
       stepName: "root format write",
@@ -1802,6 +2014,7 @@ async function runWorkspaceChecks(options, summary, failures) {
     status: rootRes.ok ? "passed" : "failed",
     durationMs: rootRes.durationMs,
   });
+  await runSecretScanStep("workspace", ROOT, summary, failures, options);
   const repoFailures = failures.filter((failure) => checkNameToRepo(failure.name) === "workspace");
   printRepoExecutionSummary("workspace", repoReport, repoFailures);
 }
@@ -1850,6 +2063,39 @@ async function ensureCoreUiSyncForConsumers(summary, failures, options) {
   }
 }
 
+/** Commits this preflight would push: `@{upstream}..HEAD`, else `origin/main..HEAD`. */
+function resolveUnpushedRange(dir) {
+  for (const base of ["@{upstream}", "origin/main"]) {
+    if (runWithResult(`git rev-parse --verify --quiet "${base}"`, dir).ok) return `${base}..HEAD`;
+  }
+  return null;
+}
+
+/**
+ * Redacted gitleaks scan of unpushed commits via the workspace core-lint (repo `config/gitleaks.toml`
+ * allowlists apply). Never scans the working tree, so ignored secret files are not read.
+ */
+async function runSecretScanStep(repoName, dir, summary, failures, options) {
+  const range = resolveUnpushedRange(dir);
+  const coreLintBin = path.join(ROOT, "core-lint", "bin", "core-lint.cjs");
+  const command = range
+    ? `${JSON.stringify(process.execPath)} ${JSON.stringify(coreLintBin)} secrets --range "${range}"`
+    : `echo "secret scan: no upstream or origin/main to compare against" >&2; exit 1`;
+  const res = await recordCommandCheck(
+    summary,
+    failures,
+    `${repoName} secret scan`,
+    command,
+    dir,
+    options
+  );
+  summary.repoReports[repoName].steps.push({
+    stepName: "secret scan",
+    status: res.ok ? "passed" : "failed",
+    durationMs: res.durationMs,
+  });
+}
+
 async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   const dir = repoName === "workspace" ? ROOT : repoDir(repoName);
   if (repoName !== "workspace") ensureRepoExists(repoName);
@@ -1870,6 +2116,7 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
       status: res.ok ? "passed" : "failed",
       durationMs: res.durationMs,
     });
+    await runSecretScanStep(repoName, dir, summary, failures, options);
     const repoFailures = failures.filter((failure) => checkNameToRepo(failure.name) === repoName);
     printRepoExecutionSummary(repoName, repoReport, repoFailures);
     return;
@@ -1896,7 +2143,7 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   }
 
   const pinnedCoreUiVersion = resolveRepoDependencyVersion(dir, "@pylonline/core-ui");
-  if (pinnedCoreUiVersion) {
+  if (pinnedCoreUiVersion && !repoUsesPnpmWorkspaceProtocol(dir)) {
     const coreUiLockRefreshRes = await recordCommandCheck(
       summary,
       failures,
@@ -1916,8 +2163,8 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     summary,
     failures,
     `${repoName} ci install`,
-    "npm install --no-audit --no-fund",
-    dir,
+    resolveRepoCiInstallCommand(repoName, dir),
+    repoUsesPnpmWorkspaceProtocol(dir) ? ROOT : dir,
     options
   );
   repoReport.steps.push({
@@ -2043,6 +2290,12 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
   if (!options.verbose) {
     console.log(`${repoName} check ${checkRes.ok ? "passed" : "failed"}`);
   }
+  await runSecretScanStep(repoName, dir, summary, failures, options);
+  if (!resolveRepoNpmScriptCommand(dir, "test", "")) {
+    const repoFailures = failures.filter((failure) => checkNameToRepo(failure.name) === repoName);
+    printRepoExecutionSummary(repoName, repoReport, repoFailures);
+    return;
+  }
   if (!options.verbose) {
     console.log("Test results:");
     printLiveTestTableHeader();
@@ -2158,6 +2411,7 @@ async function main() {
       "core-lint": { steps: [], tests: [] },
       "core-ui": { steps: [], tests: [] },
       scripts: { steps: [], tests: [] },
+      docs: { steps: [], tests: [] },
       portal: { steps: [], tests: [] },
       pylon: { steps: [], tests: [] },
     },
@@ -2168,8 +2422,10 @@ async function main() {
   };
   const failures = summary.failures;
 
+  prependUserLocalBin(process.env);
   console.log("Running release preflight...");
   console.log(`pnpm executable: ${pnpmExecutable}`);
+  console.log(`logs: ${path.relative(ROOT, initPreflightLogDir())}`);
   if (!pylonPreflightEnabled()) {
     console.log("pylon: skipped (scaffold repo — no scripts/prepare-core-ui.cjs)");
   }
@@ -2182,9 +2438,7 @@ async function main() {
     `consumer core-ui source: ${args.coreUiConsumerSource} (ref ${args.coreUiConsumerRef})`
   );
   console.log(`sync core-lint version: ${args.syncCoreLintVersion ? "on" : "off"}`);
-  console.log(
-    `refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`
-  );
+  console.log(`refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`);
   console.log(`verbose output: ${args.verbose ? "on" : "off"}`);
   console.log(`portal PR suite (api/ui/perf): ${args.skipPrTests ? "skipped" : "on"}`);
 
@@ -2232,10 +2486,7 @@ async function main() {
     const refreshTargets = (
       args.refreshCoreLintLockfiles ? CORE_LINT_CONSUMERS : pinResult.changed
     ).filter((name) => name !== "pylon" || pylonPreflightEnabled());
-    const refreshed = refreshCoreLintConsumerLockfiles(
-      refreshTargets,
-      pinResult.coreLintVersion
-    );
+    const refreshed = refreshCoreLintConsumerLockfiles(refreshTargets, pinResult.coreLintVersion);
     summary.coreLintLockfilesRefreshed = refreshed;
     summary.checks.push({
       name: "core-lint lockfile refresh",
@@ -2317,7 +2568,9 @@ async function main() {
   ];
   printSimpleTable(["field", "value"], summaryRows);
   const counts = summarizeCheckCounts(summary.checks);
-  console.log(`checks: passed ${counts.passed} | failed ${counts.failed} | skipped ${counts.skipped}`);
+  console.log(
+    `checks: passed ${counts.passed} | failed ${counts.failed} | skipped ${counts.skipped}`
+  );
   console.log(`total: ${formatDuration(totalMs)}`);
   printRepoStatusTable(summary.checks, summary.repoReports);
   const failedTests = collectFailedTestsByRepo(summary.repoReports);
@@ -2347,6 +2600,16 @@ async function main() {
         : "-",
     ]);
     printSimpleTable(["status", "repo", "exit", "command", "test", "file"], rows);
+    console.log("full logs:");
+    for (const failure of displayFailures) {
+      if (failure.logPath) console.log(`  ${failure.location || "."}: ${failure.logPath}`);
+    }
+  }
+  if (preflightLogDir) {
+    const summaryFile = writePreflightSummaryFile(args, summary, failures, totalMs);
+    console.log(
+      `logs: ${path.relative(ROOT, preflightLogDir)} (also .cache/preflight/latest${summaryFile ? `; ${summaryFile}` : ""})`
+    );
   }
   if (summary.autoFormatRetries > 0) {
     console.log(
@@ -2366,9 +2629,8 @@ async function main() {
         location: failure.location,
         command: failure.command,
         exitCode: failure.exitCode,
-        ...(failure.filePath
-          ? { filePath: toTestFileDisplayPath(failure.filePath) }
-          : {}),
+        ...(failure.logPath ? { logPath: failure.logPath } : {}),
+        ...(failure.filePath ? { filePath: toTestFileDisplayPath(failure.filePath) } : {}),
         ...(failure.testName ? { testName: failure.testName } : {}),
         ...(failure.error ? { error: failure.error } : {}),
       })),
