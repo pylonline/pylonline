@@ -78,22 +78,22 @@ importers:
         specifier: ^0.1.0
         version: link:../core-ui
       '@pylonline/portal-auth':
-        specifier: workspace:*
+        specifier: file:packages/portal-auth
         version: link:packages/portal-auth
       '@pylonline/portal-messages':
-        specifier: workspace:*
+        specifier: file:packages/portal-messages
         version: link:packages/portal-messages
       '@pylonline/portal-payments':
-        specifier: workspace:*
+        specifier: file:packages/portal-payments
         version: link:packages/portal-payments
       '@pylonline/service-contracts':
-        specifier: workspace:*
+        specifier: file:packages/service-contracts
         version: link:packages/service-contracts
       '@pylonline/service-dispatcher':
-        specifier: workspace:*
+        specifier: file:packages/service-dispatcher
         version: link:packages/service-dispatcher
       '@pylonline/service-payments-queue':
-        specifier: workspace:*
+        specifier: file:packages/service-payments-queue
         version: link:packages/service-payments-queue
       '@simplewebauthn/server':
         specifier: ^13.2.2
@@ -148,7 +148,7 @@ importers:
   portal/packages/portal-auth:
     dependencies:
       '@pylonline/service-contracts':
-        specifier: workspace:*
+        specifier: file:../service-contracts
         version: link:../service-contracts
     devDependencies:
       '@cloudflare/workers-types':
@@ -158,7 +158,7 @@ importers:
   portal/packages/portal-messages:
     dependencies:
       '@pylonline/service-contracts':
-        specifier: workspace:*
+        specifier: file:../service-contracts
         version: link:../service-contracts
     devDependencies:
       '@cloudflare/workers-types':
@@ -168,7 +168,7 @@ importers:
   portal/packages/portal-payments:
     dependencies:
       '@pylonline/service-contracts':
-        specifier: workspace:*
+        specifier: file:../service-contracts
         version: link:../service-contracts
     devDependencies:
       '@cloudflare/workers-types':
@@ -180,7 +180,7 @@ importers:
   portal/packages/service-dispatcher:
     dependencies:
       '@pylonline/service-contracts':
-        specifier: workspace:*
+        specifier: file:../service-contracts
         version: link:../service-contracts
     devDependencies:
       '@cloudflare/workers-types':
@@ -190,7 +190,7 @@ importers:
   portal/packages/service-payments-queue:
     dependencies:
       '@pylonline/service-contracts':
-        specifier: workspace:*
+        specifier: file:../service-contracts
         version: link:../service-contracts
     devDependencies:
       '@cloudflare/workers-types':

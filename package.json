@@ -9,6 +9,7 @@
     "submodules:status": "git submodule status --recursive",
     "release:preflight": "node wrang-release.cjs",
     "preflight": "npm run release:preflight",
+    "lockfiles:refresh": "node wrang-release.cjs --lockfiles-only",
     "curstats": "node scripts/curstats.cjs",
     "install:workspace": "pnpm install",
     "lint:workspace-root": "node core-lint/bin/core-lint.cjs lint",

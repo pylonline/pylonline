@@ -229,6 +229,7 @@ function parseArgs(argv) {
     summaryJson: false,
     syncCoreLintVersion: false,
     refreshCoreLintLockfiles: false,
+    lockfilesOnly: false,
     coreLintVersion: "local",
     coreUiConsumerSource: "repo-main",
     coreUiConsumerRef: "main",
@@ -273,6 +274,11 @@ function parseArgs(argv) {
       continue;
     }
     if (arg === "--refresh-core-lint-lockfiles") {
+      args.refreshCoreLintLockfiles = true;
+      continue;
+    }
+    if (arg === "--lockfiles-only") {
+      args.lockfilesOnly = true;
       args.refreshCoreLintLockfiles = true;
       continue;
     }
@@ -325,6 +331,9 @@ function parseArgs(argv) {
   if (args.bump && args.repo === "workspace") {
     printHelpAndExit(1, "--bump does not apply to workspace root");
   }
+  if (args.lockfilesOnly && args.bump) {
+    printHelpAndExit(1, "--lockfiles-only cannot be combined with --bump");
+  }
   if (!args.coreLintVersion) {
     printHelpAndExit(1, "--core-lint-version must be 'local', 'skip', or an explicit version");
   }
@@ -343,7 +352,7 @@ function printHelpAndExit(code, error = "") {
     console.error(`\nError: ${error}\n`);
   }
   console.log(`Usage:
-  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--skip-pr-tests] [--verbose] [--no-frozen-lockfile]
+  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--lockfiles-only] [--skip-pr-tests] [--verbose] [--no-frozen-lockfile]
 
 Examples:
   node wrang-release.cjs
@@ -354,6 +363,7 @@ Examples:
   node wrang-release.cjs --core-lint-version 0.2.2
   node wrang-release.cjs --sync-core-lint-version
   node wrang-release.cjs --refresh-core-lint-lockfiles
+  node wrang-release.cjs --lockfiles-only
   node wrang-release.cjs --core-ui-consumer-source repo-main --core-ui-consumer-ref main
   node wrang-release.cjs --skip-pr-tests
   node wrang-release.cjs --verbose
@@ -364,6 +374,7 @@ Repos:
   workspace, core-lint, core-ui, portal, pylon, scripts, all
 
 Flags:
+  --lockfiles-only  Refresh consumer lockfiles (core-lint, core-ui, workspace pnpm) and exit; no tests
   --skip-pr-tests  Skip portal API/UI/perf (npm run test:pr); still runs unit+runtime via npm test`);
   process.exit(code);
 }
@@ -710,6 +721,58 @@ function refreshCoreLintConsumerLockfiles(repos, coreLintVersion = "") {
     refreshed.push(repoName);
   }
   return refreshed;
+}
+
+function refreshPinnedPackageLockfiles(repos, packageName, options = {}) {
+  const { force = false, pinnedVersionHint = "" } = options;
+  const refreshed = [];
+  const LOCKFILE_REFRESH_TIMEOUT_MS = 10 * 60 * 1000;
+  for (const repoName of repos) {
+    if (repoName === "pylon" && !pylonPreflightEnabled()) continue;
+    const dir = repoDir(repoName);
+    const lockPath = path.join(dir, "package-lock.json");
+    if (!fs.existsSync(lockPath)) continue;
+    if (repoUsesPnpmWorkspaceProtocol(dir)) {
+      console.log(`\n=== Refresh npm lockfile checksums (${repoName}, ${packageName}) ===`);
+      console.log("  skipped (repo uses workspace:*; pnpm lockfile is updated at workspace root)");
+      continue;
+    }
+    const pinnedVersion =
+      pinnedVersionHint || resolveRepoDependencyVersion(dir, packageName) || "";
+    if (!pinnedVersion) continue;
+    if (
+      !force &&
+      coreLintPinsEquivalent(resolveLockfileResolvedVersion(lockPath, packageName), pinnedVersion)
+    ) {
+      console.log(`\n=== Refresh npm lockfile checksums (${repoName}, ${packageName}) ===`);
+      console.log(`  skipped (package-lock.json already resolves ${packageName}@${pinnedVersion})`);
+      continue;
+    }
+    const command = `npm install "${packageName}@${pinnedVersion}" --package-lock-only --ignore-scripts --prefer-online --force --no-audit --no-fund`;
+    console.log(`\n=== Refresh npm lockfile checksums (${repoName}, ${packageName}) ===`);
+    console.log(`  ${command}`);
+    console.log("  (may take 1–3 min while npm contacts the registry — not stuck)");
+    const result = runWithResult(command, dir, {
+      printOutput: true,
+      timeoutMs: LOCKFILE_REFRESH_TIMEOUT_MS,
+      npmLogLevel: "warn",
+    });
+    if (!result.ok) {
+      const location = path.relative(ROOT, dir) || ".";
+      throw new Error(
+        `Lockfile refresh failed in ${location}: ${command}${result.timedOut ? " (timed out)" : ""}`
+      );
+    }
+    refreshed.push(`${repoName}:${packageName}`);
+  }
+  return refreshed;
+}
+
+function lockfileOnlyConsumerRepos(repoTarget) {
+  if (repoTarget === "all" || repoTarget === "workspace") {
+    return CORE_LINT_CONSUMERS.filter((name) => name !== "pylon" || pylonPreflightEnabled());
+  }
+  return [repoTarget].filter((name) => name !== "pylon" || pylonPreflightEnabled());
 }
 
 /**
@@ -2403,6 +2466,7 @@ async function main() {
     coreLintVersion: "",
     coreLintPinsUpdated: [],
     coreLintLockfilesRefreshed: [],
+    coreUiLockfilesRefreshed: [],
     coreUiSyncBootstrapRepos: new Set(),
     failures: [],
     checks: [],
@@ -2439,8 +2503,9 @@ async function main() {
   );
   console.log(`sync core-lint version: ${args.syncCoreLintVersion ? "on" : "off"}`);
   console.log(`refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`);
+  console.log(`lockfiles only: ${args.lockfilesOnly ? "on" : "off"}`);
   console.log(`verbose output: ${args.verbose ? "on" : "off"}`);
-  console.log(`portal PR suite (api/ui/perf): ${args.skipPrTests ? "skipped" : "on"}`);
+  console.log(`portal PR suite (api/ui/perf): ${args.skipPrTests || args.lockfilesOnly ? "skipped" : "on"}`);
 
   await printPreflightToolingAdvisories(targets);
 
@@ -2481,7 +2546,7 @@ async function main() {
     console.error(`core-lint pin validation failed: ${error.message}`);
   }
 
-  if (pinResult && (args.refreshCoreLintLockfiles || pinResult.changed.length)) {
+  if (pinResult && !args.lockfilesOnly && (args.refreshCoreLintLockfiles || pinResult.changed.length)) {
     const refreshStart = nowMs();
     const refreshTargets = (
       args.refreshCoreLintLockfiles ? CORE_LINT_CONSUMERS : pinResult.changed
@@ -2505,7 +2570,69 @@ async function main() {
     });
   }
 
-  if (pinResult && pinResult.changed.length) {
+  if (args.lockfilesOnly) {
+    printCenteredBanner("LOCKFILE REFRESH ONLY");
+    const lockfileConsumers = lockfileOnlyConsumerRepos(args.repo);
+    const lintRefreshStart = nowMs();
+    try {
+      const lintRefreshed = refreshPinnedPackageLockfiles(
+        lockfileConsumers,
+        "@pylonline/core-lint",
+        {
+          force: true,
+          pinnedVersionHint: pinResult?.coreLintVersion || "",
+        }
+      );
+      summary.coreLintLockfilesRefreshed = lintRefreshed;
+      summary.checks.push({
+        name: "core-lint lockfile refresh",
+        status: "passed",
+        durationMs: nowMs() - lintRefreshStart,
+      });
+    } catch (error) {
+      summary.checks.push({
+        name: "core-lint lockfile refresh",
+        status: "failed",
+        durationMs: nowMs() - lintRefreshStart,
+      });
+      failures.push({
+        name: "core-lint lockfile refresh",
+        location: ".",
+        command: "core-lint lockfile refresh",
+        exitCode: 1,
+        error: error.message,
+      });
+      console.error(`core-lint lockfile refresh failed: ${error.message}`);
+    }
+    const uiRefreshStart = nowMs();
+    try {
+      const uiRefreshed = refreshPinnedPackageLockfiles(lockfileConsumers, "@pylonline/core-ui", {
+        force: true,
+      });
+      summary.coreUiLockfilesRefreshed = uiRefreshed;
+      summary.checks.push({
+        name: "core-ui lockfile refresh",
+        status: "passed",
+        durationMs: nowMs() - uiRefreshStart,
+      });
+    } catch (error) {
+      summary.checks.push({
+        name: "core-ui lockfile refresh",
+        status: "failed",
+        durationMs: nowMs() - uiRefreshStart,
+      });
+      failures.push({
+        name: "core-ui lockfile refresh",
+        location: ".",
+        command: "core-ui lockfile refresh",
+        exitCode: 1,
+        error: error.message,
+      });
+      console.error(`core-ui lockfile refresh failed: ${error.message}`);
+    }
+  }
+
+  if (pinResult && (pinResult.changed.length || args.lockfilesOnly)) {
     console.log("\n=== Workspace pnpm lockfile refresh ===");
     console.log(`  ${pnpm("install --lockfile-only")}`);
     console.log("  (may take several minutes — not stuck)");
@@ -2524,10 +2651,12 @@ async function main() {
     });
   }
 
-  await runWorkspaceChecks(args, summary, failures);
-  await ensureCoreUiSyncForConsumers(summary, failures, args);
-  for (const repoName of targets) {
-    await runRepoChecksWithOptions(repoName, summary, failures, args);
+  if (!args.lockfilesOnly) {
+    await runWorkspaceChecks(args, summary, failures);
+    await ensureCoreUiSyncForConsumers(summary, failures, args);
+    for (const repoName of targets) {
+      await runRepoChecksWithOptions(repoName, summary, failures, args);
+    }
   }
 
   if (args.bump) {
@@ -2559,6 +2688,12 @@ async function main() {
       "core-lint lockfiles refreshed",
       summary.coreLintLockfilesRefreshed.length
         ? summary.coreLintLockfilesRefreshed.join(", ")
+        : "none",
+    ],
+    [
+      "core-ui lockfiles refreshed",
+      summary.coreUiLockfilesRefreshed.length
+        ? summary.coreUiLockfilesRefreshed.join(", ")
         : "none",
     ],
     ["failures", String(failures.length)],
