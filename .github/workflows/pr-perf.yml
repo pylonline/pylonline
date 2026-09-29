@@ -88,14 +88,14 @@ jobs:
       - name: Start local Worker
         run: |
           node scripts/dev/wrangler/start-wrangler-ci-background.cjs \
-            --port=8789 \
+            --port=8788 \
             --host=127.0.0.1 \
             --log=/tmp/portal-perf-smoke.log \
             --pid=/tmp/portal-perf-smoke.pid
 
       - name: Wait for local Worker
         id: wait-for-worker
-        run: node scripts/dev/wrangler/wait-for-worker-http.cjs --url=http://127.0.0.1:8789/signin --timeout-ms=240000
+        run: node scripts/dev/wrangler/wait-for-worker-http.cjs --url=http://127.0.0.1:8788/signin --timeout-ms=240000
 
       - name: Show Worker log when wait fails
         if: failure() && steps.wait-for-worker.outcome == 'failure'

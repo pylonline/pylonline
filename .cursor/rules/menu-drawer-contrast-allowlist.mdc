@@ -1,0 +1,15 @@
+---
+description: Do not “fix” banner/menu drawer hover or underline colors to WCAG AA; product accepts low contrast there.
+globs: "**/template-menu-drawer.css,**/menu-drawer*.test.*,**/menu-drawer-contrast*.mjs"
+alwaysApply: false
+---
+
+# Menu drawer contrast allowlist
+
+When contrast checks, DevTools, or a11y tests flag the banner **menu drawer**:
+
+- **Do not** retune selected/current `--tpl-color-interactive-hover` (pink day / teal night on the tray) to pass WCAG AA unless product explicitly asks.
+- Day rest ink is **black** on purple; night rest ink is **white** on lime. Resting underlines are the inverse (**white** day / **black** night). Hover is white day / black night (text and underline). Selected/current underlines follow **currentColor**.
+- The action-row separator may stay **interactive accent at 0.62**.
+- The exception is **selected / current** ink on the tray; resting and hover text may still be held to AA.
+- In tests: allowlist or skip these tokens — see `portal/tests/unit/css/menu-drawer-contrast-allowlist.test.mjs` and the “Accepted contrast exception” comments in `template-menu-drawer.css`.
