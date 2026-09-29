@@ -737,8 +737,7 @@ function refreshPinnedPackageLockfiles(repos, packageName, options = {}) {
       console.log("  skipped (repo uses workspace:*; pnpm lockfile is updated at workspace root)");
       continue;
     }
-    const pinnedVersion =
-      pinnedVersionHint || resolveRepoDependencyVersion(dir, packageName) || "";
+    const pinnedVersion = pinnedVersionHint || resolveRepoDependencyVersion(dir, packageName) || "";
     if (!pinnedVersion) continue;
     if (
       !force &&
@@ -2505,7 +2504,9 @@ async function main() {
   console.log(`refresh core-lint lockfiles: ${args.refreshCoreLintLockfiles ? "on" : "off"}`);
   console.log(`lockfiles only: ${args.lockfilesOnly ? "on" : "off"}`);
   console.log(`verbose output: ${args.verbose ? "on" : "off"}`);
-  console.log(`portal PR suite (api/ui/perf): ${args.skipPrTests || args.lockfilesOnly ? "skipped" : "on"}`);
+  console.log(
+    `portal PR suite (api/ui/perf): ${args.skipPrTests || args.lockfilesOnly ? "skipped" : "on"}`
+  );
 
   await printPreflightToolingAdvisories(targets);
 
@@ -2546,7 +2547,11 @@ async function main() {
     console.error(`core-lint pin validation failed: ${error.message}`);
   }
 
-  if (pinResult && !args.lockfilesOnly && (args.refreshCoreLintLockfiles || pinResult.changed.length)) {
+  if (
+    pinResult &&
+    !args.lockfilesOnly &&
+    (args.refreshCoreLintLockfiles || pinResult.changed.length)
+  ) {
     const refreshStart = nowMs();
     const refreshTargets = (
       args.refreshCoreLintLockfiles ? CORE_LINT_CONSUMERS : pinResult.changed
