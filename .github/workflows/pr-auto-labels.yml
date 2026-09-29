@@ -1,14 +1,7 @@
-name: PR Auto Labels
+name: Suite Label Setup
 
 on:
-  pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "PR number to ensure default labels on (optional; omit on pull_request_target runs)"
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -16,69 +9,41 @@ permissions:
   pull-requests: write
 
 jobs:
-  apply-default-pr-labels:
+  ensure-labels:
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure labels exist and apply to PR
+      - name: Ensure suite labels exist
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PACKAGES_PAT || github.token }}
+          github-token: ${{ github.token }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const issue_number = context.payload.pull_request?.number
-              ?? Number("${{ inputs.pr_number }}");
-            if (!issue_number) {
-              core.setFailed("Missing PR number (pull_request_target payload or workflow_dispatch input).");
-              return;
-            }
-            const desiredLabels = [
-              { name: "ut", color: "1D76DB", description: "[Pylon Line] Repository has unit test coverage and unit-test workflows." },
-              { name: "ci", color: "0E8A16", description: "[Pylon Line] Repository has pull request CI workflows." },
-              { name: "perf", color: "FBCA04", description: "[Pylon Line] Re-run portal PR perf smoke (local wrangler load test)." },
+            const rerunLabels = [
+              { name: "ci", color: "0E8A16", description: "[Pylon Line] Re-run workspace lint/format checks." },
+              { name: "ut", color: "1D76DB", description: "[Pylon Line] Re-run workspace unit tests + coverage." },
+              { name: "perf", color: "FBCA04", description: "[Pylon Line] Re-run portal perf smoke in workspace CI." }
             ];
-
             try {
-              for (const label of desiredLabels) {
+              for (const label of rerunLabels) {
                 try {
                   await github.rest.issues.getLabel({ owner, repo, name: label.name });
+                  await github.rest.issues.updateLabel({
+                    owner, repo, name: label.name, color: label.color, description: label.description,
+                  });
                 } catch (error) {
                   if (error.status !== 404) throw error;
                   await github.rest.issues.createLabel({
-                    owner,
-                    repo,
-                    name: label.name,
-                    color: label.color,
-                    description: label.description,
+                    owner, repo, name: label.name, color: label.color, description: label.description,
                   });
                 }
               }
-
-              const { data: issue } = await github.rest.issues.get({
-                owner,
-                repo,
-                issue_number,
-              });
-              const current = new Set(issue.labels.map((label) => label.name));
-              const missing = desiredLabels
-                .map((label) => label.name)
-                .filter((name) => !current.has(name));
-              if (missing.length > 0) {
-                await github.rest.issues.addLabels({
-                  owner,
-                  repo,
-                  issue_number,
-                  labels: missing,
-                });
-                core.info(`Applied missing PR labels: ${missing.join(", ")}`);
-              } else {
-                core.info("PR already has all default labels.");
-              }
+              core.info("Repo suite labels are ready. Each suite workflow adds and removes its own PR label.");
             } catch (error) {
               if (error.status === 403) {
                 core.warning(
                   "PR label automation is blocked by token permissions. " +
-                    "Enable Actions read/write workflow permissions in repository settings."
+                    "Set Actions workflow permissions to Read and write."
                 );
                 return;
               }

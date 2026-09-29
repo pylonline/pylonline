@@ -1,0 +1,18 @@
+---
+description: Control-shell rest gradient stays on; do not fade or empty-hide it (reload thrash).
+globs: "**/template-card-insecure-fields.css,**/card-fields.js,**/template-settings-field*.css,**/template-interactive-fields.css,**/route-secure-settings/**,**/secure-settings.html,**/render-settings.ts,**/settings-view-mode-rest-gradient.test.mjs,**/template-card-control-shell-gradient.test.mjs,**/card-field-presentation-sync.test.mjs"
+alwaysApply: false
+---
+
+# Field control-shell rest gradient
+
+`.template-card-field` + `.template-card-control-shell` rest overlay (`::before`) must stay visible on first paint for **every current field and every new field** that uses this atom.
+
+- Default `::before` **opacity 1**. Do **not** transition opacity (re-applying `.template-card-surface-gradient` restarts a fade = reload thrash).
+- Do **not** hide the overlay because the value is empty, `:placeholder-shown`, or `data-settings-surface="empty"`. Empty vs filled is placeholder vs value only.
+- Readonly/disabled shells are not focus-surfaces that hide `::before`.
+- Presentation sync must be idempotent. Do not schedule 120ms/600ms full resyncs.
+
+Settings view-mode info shells (`.template-settings-info-shell`) inherit this; do not add Username-only exceptions.
+
+Contracts: `portal/tests/unit/css/template-card-control-shell-gradient.test.mjs`, `portal/tests/unit/ui/card-field-presentation-sync.test.mjs`, `portal/tests/unit/css/settings-view-mode-rest-gradient.test.mjs`.

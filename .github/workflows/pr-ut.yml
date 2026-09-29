@@ -1,0 +1,88 @@
+name: ut
+
+on:
+  pull_request:
+    branches: [main, release]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: workspace-pr-ut-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  ut:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PACKAGES_PAT }}
+          submodules: recursive
+      - name: Mark suite in progress
+        uses: ./.github/actions/pr-suite-label
+        with:
+          label: ut
+          mode: add
+
+      - name: Validate workspace secret
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PACKAGES_TOKEN}" ]; then
+            echo "::error::Missing PACKAGES_PAT in the pylonline workspace repo."
+            echo "::error::It must allow private repo checkout and GitHub Packages reads."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Configure GitHub Packages auth
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_PAT }}
+        run: |
+          set -euo pipefail
+          {
+            echo "@pylonline:registry=https://npm.pkg.github.com"
+            echo "//npm.pkg.github.com/:_authToken=${PACKAGES_TOKEN}"
+            echo "always-auth=true"
+          } > ~/.npmrc
+
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Unit tests (workspace aggregate)
+        run: pnpm -r --if-present --filter '!@pylonline/pylon' run test
+
+      - name: Coverage (workspace aggregate)
+        run: pnpm -r --if-present --filter '!@pylonline/pylon' run coverage
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-coverage
+          path: |
+            core-lint/coverage
+            core-ui/coverage
+            portal/coverage
+            scripts/coverage
+          if-no-files-found: error
+
+      - name: Remove consumed suite label
+        if: ${{ always() && !cancelled() }}
+        uses: ./.github/actions/pr-suite-label
+        with:
+          label: ut
+          mode: remove

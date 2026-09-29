@@ -1,0 +1,72 @@
+name: PR suite label
+description: Add or remove this suite's label on the current pull request
+inputs:
+  label:
+    description: Suite label name (ci, ut, api, ui, perf)
+    required: true
+  mode:
+    description: add or remove
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Update suite label
+      uses: actions/github-script@v7
+      env:
+        SUITE_LABEL: ${{ inputs.label }}
+        SUITE_LABEL_MODE: ${{ inputs.mode }}
+      with:
+        github-token: ${{ github.token }}
+        script: |
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const label = process.env.SUITE_LABEL;
+          const mode = process.env.SUITE_LABEL_MODE;
+          let issue_number = context.payload.pull_request?.number;
+          if (!issue_number) {
+            const branch = context.ref.replace(/^refs\/heads\//, "");
+            const { data: prs } = await github.rest.pulls.list({
+              owner, repo, state: "open", head: `${owner}:${branch}`,
+            });
+            issue_number = prs[0]?.number;
+          }
+          if (!issue_number) {
+            core.info("No PR number; skipping suite label update.");
+            return;
+          }
+          if (mode === "add") {
+            const deadline = Date.now() + 60000;
+            while (true) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number, labels: [label],
+                });
+                core.info(`Applied label ${label} to PR #${issue_number}`);
+                return;
+              } catch (error) {
+                if (error.status === 403) {
+                  core.error(
+                    `Cannot add label ${label} (403). The job needs issues: write and pull-requests: write.`
+                  );
+                  return;
+                }
+                const missing = error.status === 404 || error.status === 422;
+                if (!missing || Date.now() >= deadline) throw error;
+                core.info(`Label ${label} not ready yet (${error.status}); retrying...`);
+                await new Promise((resolve) => setTimeout(resolve, 3000));
+              }
+            }
+          }
+          try {
+            await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label });
+            core.info(`Removed label ${label} from PR #${issue_number}`);
+          } catch (error) {
+            if (error.status === 403) {
+              core.error(
+                `Cannot remove label ${label} (403). The job needs issues: write and pull-requests: write.`
+              );
+              return;
+            }
+            if (error.status !== 404) throw error;
+            core.info(`Label ${label} already absent on PR #${issue_number}`);
+          }
