@@ -1,6 +1,6 @@
 ---
 name: page-service-requests
-description: Use when working on the Service requests page (/secure/service-requests). Entitlement-gated member visit booking (install|maintenance|other), Flatpickr slots, open/closed lists.
+description: Use when working on the Service requests page (/portal/secure/private/scheduling). Entitlement-gated member visit booking (install|maintenance|other), Flatpickr slots, open/closed lists.
 model: inherit
 ---
 
@@ -49,7 +49,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/service-requests` (signed-in, entitlement-gated)
+- Route: `/portal/secure/private/scheduling` (signed-in, entitlement-gated)
 - Section `aria-label`: `Secure service requests`
 - Body: `template-settings-page template-service-requests-page template-consultation-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`

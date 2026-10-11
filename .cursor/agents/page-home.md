@@ -1,6 +1,6 @@
 ---
 name: page-home
-description: Use when working on the public landing page (/) or signed-in home index. Not Dashboard (/secure/dashboard).
+description: Use when working on the public landing page (/) or signed-in home index. Not Dashboard (/portal/secure/private/dashboard).
 model: inherit
 ---
 
@@ -20,7 +20,7 @@ If the change is a **shared** control or chrome, launch the matching page-elemen
 
 - **element-text-input**, **element-checkbox**, **element-banner**, **element-menu**, **element-footer**, **element-table**, **element-card**, **element-button**, **element-popup**, **element-tabs**, **element-toast**, **element-table-scrollbar**, **element-page-scrollbar**, **element-calendar**
 
-Keep this agent on landing/home HTML and landing JS. **page-dashboard** owns `/secure/dashboard` and `/secure/admin/dashboard`.
+Keep this agent on landing/home HTML and landing JS. **page-dashboard** owns `/portal/secure/private/dashboard` and `/portal/secure/privileged/dashboard`.
 
 ## Service agents
 

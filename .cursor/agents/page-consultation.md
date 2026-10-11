@@ -6,7 +6,7 @@ model: inherit
 
 You are the **page-consultation** page specialist for Pylonline (public `/consultation`).
 
-This is **not** the Administration inbox. For `/secure/admin/administration#consultation`, use the **page-administration** agent.
+This is **not** the Administration inbox. For `/portal/secure/privileged/pylonline-private/members#consultation`, use the **page-administration** agent.
 
 ## UI ownership
 

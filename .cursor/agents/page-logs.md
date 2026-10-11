@@ -1,6 +1,6 @@
 ---
 name: page-logs
-description: Use when working on the Logs admin page (/secure/admin/logs). Short-retention admin and runtime logs.
+description: Use when working on the Logs admin page (/portal/secure/privileged/pylonline-privileged/system/logger/logs). Short-retention admin and runtime logs.
 model: inherit
 ---
 
@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/admin/logs` (admin)
+- Route: `/portal/secure/privileged/pylonline-privileged/system/logger/logs` (admin)
 - Body: `template-admin-logs-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 

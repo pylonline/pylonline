@@ -1,6 +1,6 @@
 ---
 name: page-messages
-description: Use when working on the Messages page (/secure/messages). Signed-in message and support-request inbox for the user.
+description: Use when working on the Messages page (/portal/secure/private/inbox). Signed-in message and support-request inbox for the user.
 model: inherit
 ---
 
@@ -48,7 +48,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/messages` (signed-in); hash `#support-requests` in some drawer links
+- Route: `/portal/secure/private/inbox` (signed-in); hash `#support-requests` in some drawer links
 - Body: `template-settings-page template-messages-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 - Section is messages; **tables** use `aria-label`s such as `Support requests`, `Alerts`, `Billing messages` (not a single “Secure messages” table label)

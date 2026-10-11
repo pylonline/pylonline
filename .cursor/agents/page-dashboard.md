@@ -1,6 +1,6 @@
 ---
 name: page-dashboard
-description: Use when working on member Dashboard (/secure/dashboard) or admin Dashboard (/secure/admin/dashboard). Not the public landing (/).
+description: Use when working on member Dashboard (/portal/secure/private/dashboard) or admin Dashboard (/portal/secure/privileged/dashboard). Not the public landing (/).
 model: inherit
 ---
 
@@ -30,8 +30,8 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- `/secure/dashboard` — members; admins redirect to admin dashboard
-- `/secure/admin/dashboard` — admin
+- `/portal/secure/private/dashboard` — members; admins redirect to admin dashboard
+- `/portal/secure/privileged/dashboard` — admin
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 
 ## Key files

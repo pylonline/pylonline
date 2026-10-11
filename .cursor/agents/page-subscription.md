@@ -1,6 +1,6 @@
 ---
 name: page-subscription
-description: Use when working on the Subscription page (/secure/subscription). Signed-in plans, entitlement requests, tiers, and fulfillment. Payment-method APIs use **service-billing**.
+description: Use when working on the Subscription page (/portal/secure/private/account/installations). Signed-in plans, entitlement requests, tiers, and fulfillment. Payment-method APIs use **service-billing**.
 model: inherit
 ---
 
@@ -49,7 +49,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/subscription` (signed-in)
+- Route: `/portal/secure/private/account/installations` (signed-in)
 - Section `aria-label`: `Secure subscription`
 - Body: `template-settings-page template-subscription-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`

@@ -15,7 +15,7 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Table column layout → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
-Stay on this page's files unless the task requires a shared contract change. Creating/editing maintenance **windows** on `/secure/admin/administration#maintenance` belongs to the **page-administration** agent; this agent owns the public status page and site-wide banners.
+Stay on this page's files unless the task requires a shared contract change. Creating/editing maintenance **windows** on `/portal/secure/privileged/pylonline-private/members#maintenance` belongs to the **page-administration** agent; this agent owns the public status page and site-wide banners.
 
 
 ## Page-element agents

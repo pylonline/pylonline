@@ -1,6 +1,6 @@
 ---
 name: page-database
-description: Use when working on the Database admin page (/secure/admin/database). D1 table browser and summary.
+description: Use when working on the Database admin page (/portal/secure/privileged/pylonline-privileged/system/database). D1 table browser and summary.
 model: inherit
 ---
 
@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/admin/database` (admin)
+- Route: `/portal/secure/privileged/pylonline-privileged/system/database` (admin)
 - Body: `template-settings-page template-admin-database-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 

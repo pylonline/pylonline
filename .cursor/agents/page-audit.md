@@ -1,6 +1,6 @@
 ---
 name: page-audit
-description: Use when working on the Audit admin page (/secure/admin/audit). Security and admin-action audit log.
+description: Use when working on the Audit admin page (/portal/secure/privileged/pylonline-privileged/system/logger/audit). Security and admin-action audit log.
 model: inherit
 ---
 
@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/admin/audit` (admin)
+- Route: `/portal/secure/privileged/pylonline-privileged/system/logger/audit` (admin)
 - Body: `template-admin-audit-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 

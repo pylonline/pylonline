@@ -35,9 +35,9 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 | `page-home`, `page-services`, `page-newsletter`, `page-support`, `page-consultation`, `page-about`, `page-demo`, `page-faq` | `/`, `/services`, `/newsletter`, `/support`, `/consultation`, `/about`, `/demo`, `/faq` |
 | `page-sign-in`, `page-sign-up`, `page-registration`, `page-verification`, `page-password-recovery` | `/signin`, `/signup`, `/registration`, verify family, forgot/reset |
 | `page-legal`, `page-not-found` | `/terms` and other policies, `/not-found` |
-| `page-subscription`, `page-service-requests`, `page-downloads`, `page-messages`, `page-support-inbox`, `page-docs`, `page-app`, `page-dashboard` | `/secure/…` |
-| `page-communication`, `page-administration`, `page-database`, `page-metrics`, `page-audit`, `page-logs`, `page-api` | `/secure/admin/…` |
-| `page-settings`, `page-maintenance`, `page-cookie-popup` | `/secure/settings`, `/maintenance`, cookie overlay |
+| `page-subscription`, `page-service-requests`, `page-downloads`, `page-messages`, `page-support-inbox`, `page-docs`, `page-app`, `page-dashboard` | `/portal/secure/private/…` |
+| `page-communication`, `page-administration`, `page-database`, `page-metrics`, `page-audit`, `page-logs`, `page-api` | `/portal/secure/privileged/…` |
+| `page-settings`, `page-maintenance`, `page-cookie-popup` | `/portal/secure/private/account/settings`, `/maintenance`, cookie overlay |
 
 | Element agents | Owns |
 |----------------|------|
@@ -54,12 +54,12 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 | `service-billing` | Payment methods, setup intents, shared Stripe webhook ingress (not plan lifecycle) |
 | `service-auth`, `service-account` | Sign-in/session/OTP/passkeys/OAuth; profile/privacy/devices/cookies |
 | `service-maintenance`, `service-downloads`, `service-email` | Status/windows; secure files; Resend |
-| `service-database`, `service-observability` | Admin D1 browser APIs; metrics/audit/logs APIs |
+| `service-database`, `service-observability` | Admin D1 browser APIs; metrics/audit/logs APIs (logger Worker: tail → `worker_log_events`) |
 
 ### Notes
 
 - **Entitlements** stay under `service-subscription` + `page-subscription` (spec: [subscription-entitlements.md](docs/architecture/portal/subscription-entitlements.md)). No separate monitor agent until register HTTP exists.
-- Service test manifests live in `portal/tests/services/<name>/manifest.json`. Manifest folder names may differ from agent names: `payments` ↔ `service-billing`, `scheduling` ↔ `service-consultation`. Run with `npm run test:service:<name>` from `portal/`.
+- Service test manifests live in `portal/tests/services/<name>/manifest.json`. Folder names match agents where they differ from old Worker names: `billing` ↔ `service-billing`, `scheduling` ↔ `service-consultation`, `dispatcher` ↔ `service-email` + `service-messages` (notify producers), `logger` ↔ `service-observability`. Run with `npm run test:service:<name>` from `portal/`.
 
 ## Backend and non-UI
 
@@ -75,5 +75,5 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 ## Tests
 
 - After CSS boundary changes, run relevant unit tests under `portal/tests/unit/css/`.
-- Per-service suites: `npm run test:service:auth|payments|messages|scheduling|subscription|all` (from `portal/`).
+- Per-service suites: `npm run test:service:auth|billing|messages|scheduling|subscription|monitor|dispatcher|logger|all` (from `portal/`).
 - Portal test matrix and commands: **[docs/runbooks/portal/portal-test-plan/](docs/runbooks/portal/portal-test-plan/)**; quick reference in [portal/README.md](portal/README.md) (`pnpm run test:unit`, `test:runtime`, `test:api`, `test:ui`).

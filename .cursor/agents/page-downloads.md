@@ -1,6 +1,6 @@
 ---
 name: page-downloads
-description: Use when working on the Downloads page (/secure/download). Signed-in member file downloads.
+description: Use when working on the Downloads page (/portal/secure/private/downloads). Signed-in member file downloads.
 model: inherit
 ---
 
@@ -15,7 +15,7 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Table column layout → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
-Stay on this page's files unless the task requires a shared contract change. Mobile store QR/download UI on `/secure/app` belongs to the **page-app** agent.
+Stay on this page's files unless the task requires a shared contract change. Mobile store QR/download UI on `/portal/secure/private/downloads/app` belongs to the **page-app** agent.
 
 
 ## Page-element agents
@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/download` (signed-in); file URLs under `/secure/files/...`
+- Route: `/portal/secure/private/downloads` (signed-in); file URLs under `/secure/files/...`
 - Body: `template-settings-page template-download-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 

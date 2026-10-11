@@ -1,6 +1,6 @@
 ---
 name: page-metrics
-description: Use when working on the Metrics admin page (/secure/admin/metrics). Consent-gated operational / product analytics.
+description: Use when working on the Metrics admin page (/portal/secure/privileged/pylonline-privileged/system/logger/metrics). Consent-gated operational / product analytics.
 model: inherit
 ---
 
@@ -48,7 +48,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/admin/metrics` (admin)
+- Route: `/portal/secure/privileged/pylonline-privileged/system/logger/metrics` (admin)
 - Body: `template-settings-page template-admin-metrics-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts` (`HEAD_ADMIN_METRICS` loads `/assets/js/route-admin/metrics.js`)
 

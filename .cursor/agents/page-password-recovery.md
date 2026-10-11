@@ -1,6 +1,6 @@
 ---
 name: page-password-recovery
-description: Use when working on forgot-password, forgot-email, or reset-password flows (/forgot-password, /forgot-email, /reset-password, /secure/reset-password).
+description: Use when working on forgot-password, forgot-email, or reset-password flows (/recovery/password, /recovery/email, /recovery/reset).
 model: inherit
 ---
 
@@ -30,8 +30,8 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- `/forgot-password`, `/forgot-email`, `/reset-password` (public)
-- `/secure/reset-password` (signed-in)
+- `/recovery/password`, `/recovery/email`, `/recovery/reset` (public)
+- `/secure/recovery/reset` (signed-in)
 - Bodies: `template-forgot-password-page`, `template-forgot-email-page`, `template-reset-password-page`
 
 ## Key files

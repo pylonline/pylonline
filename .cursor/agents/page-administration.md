@@ -1,6 +1,6 @@
 ---
 name: page-administration
-description: Use when working on the Administration page (/secure/admin/administration). Dashboard, maintenance, members, subdomains, and consultation inbox.
+description: Use when working on the Administration page (/portal/secure/privileged/pylonline-private/members). Dashboard, maintenance, members, subdomains, and consultation inbox.
 model: inherit
 ---
 
@@ -51,7 +51,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/admin/administration` (admin control plane)
+- Route: `/portal/secure/privileged/pylonline-private/members` (admin control plane)
 - Sections / hashes: `#dashboard`, `#maintenance`, `#members`, `#subdomains`, `#consultation`
 - Body: `template-admin-actions-page template-admin-administration-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`

@@ -1,6 +1,6 @@
 ---
 name: page-docs
-description: Use when working on the Docs page (/secure/docs). Signed-in member docs (DIY install pipeline, slides).
+description: Use when working on the Docs page (/portal/secure/private/docs). Signed-in member docs (DIY install pipeline, slides).
 model: inherit
 ---
 
@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/docs` (signed-in)
+- Route: `/portal/secure/private/docs` (signed-in)
 - Body: `template-page template-secure template-no-background template-docs-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts` (`HEAD_SECURE_DOCS`)
 - Content: customer DIY installation pipeline (USB + manual), tier notes, links to browser deck + `.pptx`

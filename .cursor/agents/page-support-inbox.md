@@ -1,10 +1,10 @@
 ---
 name: page-support-inbox
-description: Use when working on the signed-in Support inbox (/secure/support). Account-bound form and "Open Support Requests" / "Closed Support Requests" threads. Not the public Support page (/support).
+description: Use when working on the signed-in Support inbox (/portal/secure/private/inbox). Account-bound form and "Open Support Requests" / "Closed Support Requests" threads. Not the public Support page (/support).
 model: inherit
 ---
 
-You are the **page-support-inbox** specialist for Pylonline (`/secure/support`).
+You are the **page-support-inbox** specialist for Pylonline (`/portal/secure/private/inbox`).
 
 This is **not** the public guest form. For `/support`, use the **page-support** agent.
 
@@ -51,7 +51,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/support` (signed-in)
+- Route: `/portal/secure/private/inbox` (signed-in)
 - Body: `template-settings-page template-support-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 - Section `aria-label`: `Secure support`

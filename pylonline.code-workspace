@@ -9,7 +9,7 @@
     { "path": "scripts", "name": "scripts" }
   ],
   "settings": {
-    "workbench.colorTheme": "Quiet Light",
+    "workbench.colorTheme": "Default Light Modern",
     "files.autoSave": "onFocusChange",
     "git.autoRepositoryDetection": "subFolders",
     "git.detectSubmodules": true,

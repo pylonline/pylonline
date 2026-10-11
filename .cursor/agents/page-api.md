@@ -1,6 +1,6 @@
 ---
 name: page-api
-description: Use when working on the API admin page (/secure/admin/api). API catalog and ops hub.
+description: Use when working on the API admin page (/portal/secure/privileged/pylonline-privileged/system/api). API catalog and ops hub.
 model: inherit
 ---
 
@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/admin/api` (admin)
+- Route: `/portal/secure/privileged/pylonline-privileged/system/api` (admin)
 - Body: `template-settings-page template-admin-api-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 

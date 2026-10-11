@@ -1,6 +1,6 @@
 ---
 name: page-app
-description: Use when working on the App page (/secure/app). Signed-in mobile app download / QR.
+description: Use when working on the App page (/portal/secure/private/downloads/app). Signed-in mobile app download / QR.
 model: inherit
 ---
 
@@ -15,7 +15,7 @@ Read **docs/architecture/ui/where-to-change-ui.md** before adding CSS, JS, or HT
 - Table column layout → only `core-ui/assets/css/template-contract/primitives/template-table-profiles.css` (keyed on `table[aria-label]`)
 - Do not copy selector blocks to win cascade — fix specificity or scoping (`:where()`, scoped selectors)
 
-Stay on this page's files unless the task requires a shared contract change. Member file downloads on `/secure/download` belong to the **page-downloads** agent.
+Stay on this page's files unless the task requires a shared contract change. Member file downloads on `/portal/secure/private/downloads` belong to the **page-downloads** agent.
 
 
 ## Page-element agents
@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/app` (signed-in)
+- Route: `/portal/secure/private/downloads/app` (signed-in)
 - Body: `template-app-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 - Section `aria-label`: `App starter content`

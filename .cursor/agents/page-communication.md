@@ -1,6 +1,6 @@
 ---
 name: page-communication
-description: Use when working on the Communication admin page (/secure/admin/communication). Newsletter/support inbox hub, stats, and campaigns.
+description: Use when working on the Communication admin page (/portal/secure/privileged/pylonline/tickets). Newsletter/support inbox hub, stats, and campaigns.
 model: inherit
 ---
 
@@ -48,7 +48,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/secure/admin/communication` (admin)
+- Route: `/portal/secure/privileged/pylonline/tickets` (admin)
 - Body: `template-admin-actions-page template-admin-communication-page template-admin-communications-page template-newsletter-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 - Workspace `aria-label`: `Admin communication workspace`
