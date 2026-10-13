@@ -111,9 +111,78 @@ const LIVE_TEST_TABLE_WIDTHS = [5, 10, 56, 66];
 
 /** Full per-check output lives here (`.cache/` is gitignored); the terminal shows excerpts. */
 const PREFLIGHT_LOG_ROOT = path.join(ROOT, ".cache", "preflight");
+const PREFLIGHT_PORTAL_TMP = path.join(ROOT, "portal", "tmp");
 const PREFLIGHT_LOG_RUNS_KEPT = 10;
 let preflightLogDir = "";
 let preflightLogSeq = 0;
+let preflightPortalTmpLog = "";
+
+function prunePortalTmpPreflightCopies() {
+  if (!fs.existsSync(PREFLIGHT_PORTAL_TMP)) return;
+  const stamps = [
+    ...new Set(
+      fs
+        .readdirSync(PREFLIGHT_PORTAL_TMP)
+        .map((name) => {
+          const match = /^preflight-(\d{8}-\d{6})\.(log|md)$/.exec(name);
+          return match ? match[1] : null;
+        })
+        .filter(Boolean)
+    ),
+  ].sort();
+  for (const stamp of stamps.slice(0, Math.max(0, stamps.length - PREFLIGHT_LOG_RUNS_KEPT))) {
+    for (const ext of [".log", ".md"]) {
+      fs.rmSync(path.join(PREFLIGHT_PORTAL_TMP, `preflight-${stamp}${ext}`), { force: true });
+    }
+  }
+}
+
+function installPreflightPortalTmpTee(stamp) {
+  fs.mkdirSync(PREFLIGHT_PORTAL_TMP, { recursive: true });
+  const logFile = path.join(PREFLIGHT_PORTAL_TMP, `preflight-${stamp}.log`);
+  const stream = fs.createWriteStream(logFile);
+  preflightPortalTmpLog = logFile;
+  const writeFile = (chunk, encoding) => {
+    const text = Buffer.isBuffer(chunk)
+      ? chunk.toString(typeof encoding === "string" ? encoding : "utf8")
+      : String(chunk ?? "");
+    stream.write(stripAnsi(text));
+  };
+  const wrap = (stdio) => {
+    const original = stdio.write.bind(stdio);
+    stdio.write = (chunk, encoding, cb) => {
+      try {
+        writeFile(chunk, encoding);
+      } catch {
+        // File tee must not break the terminal.
+      }
+      return original(chunk, encoding, cb);
+    };
+  };
+  wrap(process.stdout);
+  wrap(process.stderr);
+  return logFile;
+}
+
+function publishPreflightPortalTmpCopies() {
+  if (!preflightLogDir) return "";
+  const stamp = path.basename(preflightLogDir);
+  fs.mkdirSync(PREFLIGHT_PORTAL_TMP, { recursive: true });
+  const summarySrc = path.join(preflightLogDir, "SUMMARY.md");
+  let summaryDest = "";
+  if (fs.existsSync(summarySrc)) {
+    summaryDest = path.join(PREFLIGHT_PORTAL_TMP, `preflight-${stamp}.md`);
+    fs.copyFileSync(summarySrc, summaryDest);
+    fs.copyFileSync(summaryDest, path.join(PREFLIGHT_PORTAL_TMP, "preflight-latest.md"));
+  }
+  if (preflightPortalTmpLog && fs.existsSync(preflightPortalTmpLog)) {
+    fs.copyFileSync(preflightPortalTmpLog, path.join(PREFLIGHT_PORTAL_TMP, "preflight-latest.log"));
+  }
+  prunePortalTmpPreflightCopies();
+  return summaryDest
+    ? path.relative(ROOT, summaryDest)
+    : path.relative(ROOT, preflightPortalTmpLog);
+}
 
 function initPreflightLogDir() {
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
@@ -131,6 +200,7 @@ function initPreflightLogDir() {
   }
   // Consumed by portal `test:pr` so each Worker phase keeps its own log.
   process.env.PORTAL_PR_LOG_DIR = path.join(preflightLogDir, "workers", "portal");
+  installPreflightPortalTmpTee(stamp);
   return preflightLogDir;
 }
 
@@ -234,6 +304,7 @@ function parseArgs(argv) {
     coreUiConsumerSource: "repo-main",
     coreUiConsumerRef: "main",
     skipPrTests: false,
+    prPhase: "",
     verbose: false,
   };
 
@@ -317,6 +388,15 @@ function parseArgs(argv) {
       args.skipPrTests = true;
       continue;
     }
+    if (arg === "--pr-phase" && argv[i + 1]) {
+      args.prPhase = String(argv[i + 1]).trim();
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--pr-phase=")) {
+      args.prPhase = String(arg.slice("--pr-phase=".length)).trim();
+      continue;
+    }
     if (arg === "--help" || arg === "-h") {
       printHelpAndExit(0);
     }
@@ -333,6 +413,9 @@ function parseArgs(argv) {
   }
   if (args.lockfilesOnly && args.bump) {
     printHelpAndExit(1, "--lockfiles-only cannot be combined with --bump");
+  }
+  if (args.skipPrTests && args.prPhase) {
+    printHelpAndExit(1, "--pr-phase cannot be combined with --skip-pr-tests");
   }
   if (!args.coreLintVersion) {
     printHelpAndExit(1, "--core-lint-version must be 'local', 'skip', or an explicit version");
@@ -352,7 +435,7 @@ function printHelpAndExit(code, error = "") {
     console.error(`\nError: ${error}\n`);
   }
   console.log(`Usage:
-  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--lockfiles-only] [--skip-pr-tests] [--verbose] [--no-frozen-lockfile]
+  node wrang-release.cjs [--repo <name|all>] [--bump <patch|minor|major|x.y.z>] [--dry-run] [--summary-json] [--core-lint-version <local|skip|x.y.z>] [--core-ui-consumer-source <local|repo-main>] [--core-ui-consumer-ref <branch>] [--sync-core-lint-version] [--refresh-core-lint-lockfiles] [--lockfiles-only] [--skip-pr-tests] [--pr-phase <ids>] [--verbose] [--no-frozen-lockfile]
 
 Examples:
   node wrang-release.cjs
@@ -366,6 +449,7 @@ Examples:
   node wrang-release.cjs --lockfiles-only
   node wrang-release.cjs --core-ui-consumer-source repo-main --core-ui-consumer-ref main
   node wrang-release.cjs --skip-pr-tests
+  node wrang-release.cjs --repo portal --pr-phase=ui-maintenance
   node wrang-release.cjs --verbose
   node wrang-release.cjs --repo core-ui --bump patch
   node wrang-release.cjs --repo portal --no-frozen-lockfile
@@ -375,7 +459,8 @@ Repos:
 
 Flags:
   --lockfiles-only  Refresh consumer lockfiles (core-lint, core-ui, workspace pnpm) and exit; no tests
-  --skip-pr-tests  Skip portal API/UI/perf (npm run test:pr); still runs unit+runtime via npm test`);
+  --skip-pr-tests  Skip portal API/UI/perf (npm run test:pr); still runs unit+runtime via npm test
+  --pr-phase <ids>  Run only those test:pr slices (api-public,api-control,ui-public,ui-maintenance,ui-control,perf)`);
   process.exit(code);
 }
 
@@ -486,7 +571,7 @@ async function runWithStreamingResult(command, cwd = ROOT, options = {}) {
 
     const flushBufferedLines = (chunk, isStdErr) => {
       const next = (isStdErr ? stderrBuffer : stdoutBuffer) + chunk;
-      const lines = next.split(/\r?\n/);
+      const lines = next.split(/\r\n|\n|\r/);
       const remainder = lines.pop() || "";
       for (const line of lines) {
         if (onLine) onLine(line, { isStdErr });
@@ -811,13 +896,106 @@ function refreshGatedConsumerLockfiles() {
   return refreshed;
 }
 
+function stripAnsi(value) {
+  return String(value ?? "").replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 function parseTapResultLine(line) {
-  const trimmed = String(line || "").trim();
+  const trimmed = stripAnsi(line).trim();
   let match = trimmed.match(/^ok\s+(\d+)\s+-\s+(.+)$/);
-  if (match) return { id: Number(match[1]), name: match[2], status: "passed" };
+  if (match) {
+    const rawName = match[2];
+    const skipped = /#\s*(SKIP|TODO)\b/i.test(rawName);
+    return {
+      id: Number(match[1]),
+      name: rawName.replace(/\s+#\s*(SKIP|TODO)\b.*$/i, "").trim(),
+      status: skipped ? "skipped" : "passed",
+    };
+  }
   match = trimmed.match(/^not ok\s+(\d+)\s+-\s+(.+)$/);
   if (match) return { id: Number(match[1]), name: match[2], status: "failed" };
   return null;
+}
+
+/** Playwright list reporter: `✓  1 [project] › file.spec.ts:12:3 › title (1.2s)`. */
+function parsePlaywrightResultLine(line) {
+  const trimmed = stripAnsi(line).trim();
+  const match = trimmed.match(/^(?<mark>[✓✔✘×✖✗√]|[-○])\s+(?:(?<id>\d+)\s+)?(?<rest>.+)$/);
+  if (!match || !match.groups || !match.groups.rest.includes("›")) return null;
+  const mark = match.groups.mark;
+  const failed = /[✘×✖✗]/.test(mark);
+  const skipped = mark === "-" || mark === "○";
+  const rest = match.groups.rest.replace(/\s+\([\d.]+\s*\w+\)\s*$/, "");
+  const parts = rest.split(/\s+›\s+/);
+  const title = parts.pop() || rest;
+  let project = "";
+  let file = "";
+  for (const part of parts) {
+    const projectMatch = part.match(/^\[([^\]]+)\]$/);
+    if (projectMatch && !project) {
+      project = projectMatch[1];
+      continue;
+    }
+    if (!file && /\.(?:spec|test)\.[cm]?[jt]sx?/i.test(part)) {
+      file = part.replace(/:\d+(?::\d+)?$/, "");
+    }
+  }
+  if (!file && parts.length) {
+    file = parts[parts.length - 1].replace(/:\d+(?::\d+)?$/, "");
+  }
+  if (project) file = file ? `${file} [${project}]` : `[${project}]`;
+  return {
+    id: match.groups.id ? Number(match.groups.id) : 0,
+    name: title,
+    status: failed ? "failed" : skipped ? "skipped" : "passed",
+    file,
+  };
+}
+
+function matchPrProgressLine(line) {
+  const trimmed = stripAnsi(line).trim();
+  if (!trimmed) return "";
+  if (
+    /^(?:\[test:pr\]|\[test-api|\[test-ui|\[perf-smoke-pr\]|\[seed-e2e|\[ensure-playwright\]|\[apply-local-domain-sql\]|\[start-wrangler|\[stop-wrangler)/.test(
+      trimmed
+    )
+  ) {
+    return trimmed;
+  }
+  if (/^Running \d+ tests? using \d+ workers?/.test(trimmed)) return trimmed;
+  if (/^\d+ (?:passed|failed|skipped|flaky)(?: \(\S+\))?$/.test(trimmed)) return trimmed;
+  return "";
+}
+
+function createLiveTestTablePrinter() {
+  let open = false;
+  let fallbackId = 0;
+  return {
+    printRow(testResult) {
+      if (!open) {
+        printLiveTestTableHeader();
+        open = true;
+      }
+      const row = { ...testResult };
+      if (!row.id) {
+        fallbackId += 1;
+        row.id = fallbackId;
+      }
+      printLiveTestTableRow(row);
+    },
+    printNote(line) {
+      if (open) {
+        printLiveTestTableFooter();
+        open = false;
+      }
+      console.log(line);
+    },
+    close() {
+      if (!open) return;
+      printLiveTestTableFooter();
+      open = false;
+    },
+  };
 }
 
 function visibleTextLength(value) {
@@ -896,7 +1074,10 @@ async function recordCommandCheck(summary, failures, name, command, cwd, options
     printOutput: verbose,
     onLine: combinedOnLine,
     timeoutMs: Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 0,
-    ...(parseCoreLintSteps ? { env: { CORE_LINT_CHECK_STEPS: "1" } } : {}),
+    env: {
+      ...(parseCoreLintSteps ? { CORE_LINT_CHECK_STEPS: "1" } : {}),
+      ...(options.env || {}),
+    },
   });
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   const status = result.ok ? "passed" : "failed";
@@ -1019,6 +1200,7 @@ function computeRepoStatuses(checks) {
       stepsSkipped: 0,
       testsPassed: 0,
       testsFailed: 0,
+      testsSkipped: 0,
       testsTotal: 0,
     };
   }
@@ -1061,11 +1243,7 @@ function printRepoStatusTable(checks, repoReports) {
   for (const row of rows) {
     const report = repoReports[row.repo];
     if (!report || !Array.isArray(report.tests)) continue;
-    for (const test of report.tests) {
-      row.testsTotal += 1;
-      if (test.status === "failed") row.testsFailed += 1;
-      else if (test.status === "passed") row.testsPassed += 1;
-    }
+    applyTestTallies(row, report.tests);
   }
   const headers = ["repo", "status"];
   const rawRows = rows.map((row) => [
@@ -1073,9 +1251,10 @@ function printRepoStatusTable(checks, repoReports) {
     row.status.toUpperCase(),
     String(row.testsPassed),
     String(row.testsFailed),
+    String(row.testsSkipped),
     String(row.testsTotal),
   ]);
-  headers.push("tests ok", "tests fail", "tests total");
+  headers.push("tests ok", "tests fail", "tests skip", "tests total");
   console.log("\nRepo status table (steps + tests):");
   const displayRows = rawRows.map((row, i) => {
     const cells = [...row];
@@ -1086,19 +1265,30 @@ function printRepoStatusTable(checks, repoReports) {
     (acc, row) => {
       acc.testsPassed += row.testsPassed;
       acc.testsFailed += row.testsFailed;
+      acc.testsSkipped += row.testsSkipped;
       acc.testsTotal += row.testsTotal;
       return acc;
     },
-    { testsPassed: 0, testsFailed: 0, testsTotal: 0 }
+    { testsPassed: 0, testsFailed: 0, testsSkipped: 0, testsTotal: 0 }
   );
   displayRows.push([
     "TOTAL",
     colorizeStatus("passed", "PASSED"),
     String(totals.testsPassed),
     String(totals.testsFailed),
+    String(totals.testsSkipped),
     String(totals.testsTotal),
   ]);
   printSimpleTable(headers, displayRows, { separatorBeforeLastRow: true });
+}
+
+function applyTestTallies(row, tests) {
+  for (const test of tests) {
+    row.testsTotal += 1;
+    if (test.status === "failed") row.testsFailed += 1;
+    else if (test.status === "passed") row.testsPassed += 1;
+    else row.testsSkipped += 1;
+  }
 }
 
 function writePreflightSummaryFile(args, summary, failures, totalMs) {
@@ -1110,12 +1300,10 @@ function writePreflightSummaryFile(args, summary, failures, totalMs) {
   for (const row of repoRows) {
     const report = summary.repoReports[row.repo];
     if (!report || !Array.isArray(report.tests)) continue;
-    for (const test of report.tests) {
-      row.testsTotal += 1;
-      if (test.status === "failed") row.testsFailed += 1;
-      else if (test.status === "passed") row.testsPassed += 1;
-    }
+    applyTestTallies(row, report.tests);
   }
+
+  const skippedTests = collectSkippedTestsByRepo(summary.repoReports);
 
   const lines = [
     `# Preflight ${path.basename(preflightLogDir)}`,
@@ -1130,20 +1318,21 @@ function writePreflightSummaryFile(args, summary, failures, totalMs) {
     "- `SUMMARY.md` — this file",
     "- `checks/<repo>/` — full stdout/stderr for each preflight step",
     "- `workers/portal/` — portal `test:pr` wrangler logs (one file per phase × plane)",
+    "- `portal/tmp/preflight-<run>.log` and `.md` — terminal transcript + this summary (also `preflight-latest.*`)",
     "",
-    "Portal `test:pr` starts **public** (with hop Workers auth, payments, dispatcher in the same process) and **admin/control** (with its own auth + dispatcher). There is no standalone monitor or pylon wrangler process in this suite.",
+    "Portal `test:pr` starts **public** (identity, billing, monitor, dispatcher, logger as aux Workers) and **privileged** (its own identity + dispatcher + logger) on ports outside `dev:stack` (default 8801/8802). There is no standalone monitor or pylon wrangler process in this suite.",
     "",
     "- **monitor** is a portal Worker (`wrangler.monitor.toml`) used in deploy/ops. Local API tests hit `/api/monitor/*` through the public Worker, not a separate monitor process.",
     "- **pylon** is the desktop/device app (separate repo). Its `npm test` output is under `checks/pylon/`, not `workers/`.",
     "",
     "## Repos",
     "",
-    "| repo | status | tests ok | tests fail | tests total |",
-    "| --- | --- | ---: | ---: | ---: |",
+    "| repo | status | tests ok | tests fail | tests skip | tests total |",
+    "| --- | --- | ---: | ---: | ---: | ---: |",
   ];
   for (const row of repoRows) {
     lines.push(
-      `| ${toRepoDisplayName(row.repo)} | ${row.status.toUpperCase()} | ${row.testsPassed} | ${row.testsFailed} | ${row.testsTotal} |`
+      `| ${toRepoDisplayName(row.repo)} | ${row.status.toUpperCase()} | ${row.testsPassed} | ${row.testsFailed} | ${row.testsSkipped} | ${row.testsTotal} |`
     );
   }
 
@@ -1185,6 +1374,17 @@ function writePreflightSummaryFile(args, summary, failures, totalMs) {
     lines.push("");
   }
 
+  lines.push("## Skipped / did not run", "");
+  if (!skippedTests.length) {
+    lines.push("None.", "");
+  } else {
+    lines.push("| repo | # | test | file |", "| --- | ---: | --- | --- |");
+    for (const test of skippedTests) {
+      lines.push(`| ${test.repo} | ${test.id ?? "-"} | ${test.name} | ${test.file} |`);
+    }
+    lines.push("");
+  }
+
   lines.push("## All checks", "");
   lines.push("| status | duration | check | log |", "| --- | --- | --- | --- |");
   for (const check of summary.checks) {
@@ -1199,15 +1399,15 @@ function writePreflightSummaryFile(args, summary, failures, totalMs) {
   return path.relative(ROOT, file);
 }
 
-function collectFailedTestsByRepo(repoReports) {
+function collectTestsByStatus(repoReports, status) {
   const order = ["workspace", "core-lint", "core-ui", "scripts", "docs", "portal", "pylon"];
-  const failed = [];
+  const matches = [];
   for (const repo of order) {
     const report = repoReports[repo];
     if (!report || !Array.isArray(report.tests)) continue;
     for (const test of report.tests) {
-      if (test.status !== "failed") continue;
-      failed.push({
+      if (test.status !== status) continue;
+      matches.push({
         repo: toRepoDisplayName(repo),
         id: test.id,
         name: test.name || "-",
@@ -1215,7 +1415,15 @@ function collectFailedTestsByRepo(repoReports) {
       });
     }
   }
-  return failed;
+  return matches;
+}
+
+function collectFailedTestsByRepo(repoReports) {
+  return collectTestsByStatus(repoReports, "failed");
+}
+
+function collectSkippedTestsByRepo(repoReports) {
+  return collectTestsByStatus(repoReports, "skipped");
 }
 
 function summarizeCheckCounts(checks) {
@@ -2377,10 +2585,10 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     {
       ...options,
       onLine: (line) => {
-        const parsed = parseTapResultLine(line);
+        const parsed = parseTapResultLine(line) || parsePlaywrightResultLine(line);
         if (!parsed) return;
         const candidates = testNameIndexEntry.index.get(parsed.name) || [];
-        parsed.file = toWorkspaceRelativeDisplay(candidates[0] || "");
+        parsed.file = toWorkspaceRelativeDisplay(candidates[0] || parsed.file || "");
         liveTests.push(parsed);
         if (!options.verbose) {
           printLiveTestTableRow(parsed);
@@ -2407,19 +2615,56 @@ async function runRepoChecksWithOptions(repoName, summary, failures, options) {
     if (!options.verbose) {
       console.log(`${repoName} PR suite (api + ui + perf):`);
     }
+    const prLiveTests = [];
+    const prTable = createLiveTestTablePrinter();
+    const prTestNameIndex = summary.testNameIndexCache[repoName] || { index: null };
     const prRes = await recordCommandCheck(
       summary,
       failures,
       `${repoName} test:pr`,
       resolveRepoNpmScriptCommand(dir, "test:pr", "npm run test:pr"),
       dir,
-      options
+      {
+        ...options,
+        env: options.prPhase ? { PORTAL_PR_PHASES: options.prPhase } : undefined,
+        onLine: (line) => {
+          if (options.verbose) return;
+          const progress = matchPrProgressLine(line);
+          if (progress) {
+            prTable.printNote(progress);
+            return;
+          }
+          const tap = parseTapResultLine(line);
+          if (tap) {
+            const candidates = prTestNameIndex.index
+              ? prTestNameIndex.index.get(tap.name) || []
+              : [];
+            tap.file = toWorkspaceRelativeDisplay(candidates[0] || tap.file || "");
+            prLiveTests.push(tap);
+            prTable.printRow(tap);
+            return;
+          }
+          const playwright = parsePlaywrightResultLine(line);
+          if (playwright) {
+            playwright.file = toWorkspaceRelativeDisplay(playwright.file || "");
+            prLiveTests.push(playwright);
+            prTable.printRow(playwright);
+          }
+        },
+      }
     );
+    if (!options.verbose) {
+      prTable.close();
+    }
     repoReport.steps.push({
       stepName: "test:pr (api + ui + perf)",
       status: prRes.ok ? "passed" : "failed",
       durationMs: prRes.durationMs,
     });
+    for (const test of prLiveTests) {
+      if (test.file && test.file !== "-") test.file = toWorkspaceRelativeDisplay(test.file);
+    }
+    repoReport.tests.push(...prLiveTests);
     if (!options.verbose) {
       console.log(`${repoName} test:pr ${prRes.ok ? "passed" : "failed"}`);
     }
@@ -2486,9 +2731,10 @@ async function main() {
   const failures = summary.failures;
 
   prependUserLocalBin(process.env);
+  const logDir = initPreflightLogDir();
   console.log("Running release preflight...");
   console.log(`pnpm executable: ${pnpmExecutable}`);
-  console.log(`logs: ${path.relative(ROOT, initPreflightLogDir())}`);
+  console.log(`logs: ${path.relative(ROOT, logDir)} (also portal/tmp/preflight-latest.log)`);
   if (!pylonPreflightEnabled()) {
     console.log("pylon: skipped (scaffold repo — no scripts/prepare-core-ui.cjs)");
   }
@@ -2505,7 +2751,7 @@ async function main() {
   console.log(`lockfiles only: ${args.lockfilesOnly ? "on" : "off"}`);
   console.log(`verbose output: ${args.verbose ? "on" : "off"}`);
   console.log(
-    `portal PR suite (api/ui/perf): ${args.skipPrTests || args.lockfilesOnly ? "skipped" : "on"}`
+    `portal PR suite (api/ui/perf): ${args.skipPrTests || args.lockfilesOnly ? "skipped" : args.prPhase ? `on (${args.prPhase})` : "on"}`
   );
 
   await printPreflightToolingAdvisories(targets);
@@ -2714,6 +2960,7 @@ async function main() {
   console.log(`total: ${formatDuration(totalMs)}`);
   printRepoStatusTable(summary.checks, summary.repoReports);
   const failedTests = collectFailedTestsByRepo(summary.repoReports);
+  const skippedTests = collectSkippedTestsByRepo(summary.repoReports);
   if (failedTests.length) {
     console.log(`\n${colorizeLabel("error", "FAILED TESTS")}`);
     const testRows = failedTests.map((test) => [
@@ -2724,6 +2971,17 @@ async function main() {
       test.file || "-",
     ]);
     printSimpleTable(["status", "repo", "#", "test", "file"], testRows);
+  }
+  if (skippedTests.length) {
+    console.log(`\n${colorizeLabel("warn", "SKIPPED / DID NOT RUN")}`);
+    const skipRows = skippedTests.map((test) => [
+      colorizeStatus("skipped", "SKIPPED"),
+      test.repo,
+      String(test.id ?? "-"),
+      test.name || "-",
+      test.file || "-",
+    ]);
+    printSimpleTable(["status", "repo", "#", "test", "file"], skipRows);
   }
 
   if (failures.length) {
@@ -2747,8 +3005,9 @@ async function main() {
   }
   if (preflightLogDir) {
     const summaryFile = writePreflightSummaryFile(args, summary, failures, totalMs);
+    const portalTmpFile = publishPreflightPortalTmpCopies();
     console.log(
-      `logs: ${path.relative(ROOT, preflightLogDir)} (also .cache/preflight/latest${summaryFile ? `; ${summaryFile}` : ""})`
+      `logs: ${path.relative(ROOT, preflightLogDir)} (also .cache/preflight/latest${summaryFile ? `; ${summaryFile}` : ""}${portalTmpFile ? `; ${portalTmpFile}` : ""})`
     );
   }
   if (summary.autoFormatRetries > 0) {

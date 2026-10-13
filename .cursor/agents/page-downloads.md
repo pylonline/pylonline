@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/portal/secure/private/downloads` (signed-in); file URLs under `/secure/files/...`
+- Route: `/portal/secure/private/downloads` (signed-in); file URLs under `/portal/secure/private/downloads/files/...`
 - Body: `template-settings-page template-download-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 

@@ -47,7 +47,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/portal/secure/private/account/settings` (signed-in members on public worker); admin control plane: `/secure/admin/settings` (Summary, Profile, Sessions/Devices only)
+- Route: `/portal/secure/private/account/settings` (signed-in members on public worker); admin control plane: `/portal/secure/privileged/pylonline-private/members/me/settings` (Summary, Profile, Sessions/Devices only)
 - Member tabs include profile, privacy, notifications, cookie preferences, devices/security, and **payment methods** (APIs → **service-billing**; profile/privacy/devices → **service-account**)
 - Drawer gear `template-menu-drawer-settings-link` (often `#general`); admin drawer also lists text **Settings**
 - Body: `template-settings-page` (admin adds `template-admin template-admin-settings-page`)

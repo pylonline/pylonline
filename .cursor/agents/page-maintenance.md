@@ -57,7 +57,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 - HTML: `portal/src/pages/insecure/routes/insecure-maintenance.html`
 - Shell: `core-ui/assets/js/template/shell/maintenance-banner.js`, `core-ui/pages/templates/shared/template-shared-alert-banner.html`
 - CSS: contract maintenance card (`template-card-width-maintenance`, `template-card-padding-maintenance`)
-- API: `GET /api/site/maintenance` (and related runtime tests under `portal/tests/runtime/` / `portal/tests/unit/maintenance/`)
+- API: `GET /api/portal/public/status/maintenance` (and related runtime tests under `portal/tests/runtime/` / `portal/tests/unit/maintenance/`)
 
 ## When invoked
 

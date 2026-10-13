@@ -12,9 +12,9 @@ Past-due / grace / revoked entitlement emails (when wired) land here with **serv
 
 ## Scope
 
-- Member threads: `/api/account/messages*` (`portal/src/api/account/messages.ts`)
-- Support send: `POST /api/account/support` (`portal/src/api/account/support.ts`, `supportRateLimit.ts`) — used by both public `/support` and `/secure/support` (guest allowed; not a separate `/api/public/support`)
-- Admin: `/api/admin/support/messages`, `.../contacts`, `.../contact`, `.../open`, `.../reply`, `.../delete`, `.../delete-all` (`portal/src/api/admin/support.ts`, `supportSerializers.ts`)
+- Member threads: `/api/portal/private/inbox*` (`portal/src/api/account/messages.ts`)
+- Support send: `POST /api/portal/public/inbox/support` (`portal/src/api/account/support.ts`, `supportRateLimit.ts`) — used by both public `/support` and `/portal/secure/private/inbox` (guest allowed)
+- Admin: `/api/portal/privileged/pylonline/tickets` (`portal/src/api/admin/support.ts`, `supportSerializers.ts`)
 - D1: `portal/src/db/site/account/support.ts`, `supportStats.ts`
 - Routes: `portal/src/api/routes/definitions/account.ts`, `.../admin.ts`
 - HTML render helpers (data into shell, not CSS): `portal/src/api/html/render-messages.ts`
