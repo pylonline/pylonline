@@ -57,10 +57,10 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 - HTML: `portal/src/pages/insecure/routes/insecure-maintenance.html`
 - Shell: `core-ui/assets/js/template/shell/maintenance-banner.js`, `core-ui/pages/templates/shared/template-shared-alert-banner.html`
 - CSS: contract maintenance card (`template-card-width-maintenance`, `template-card-padding-maintenance`)
-- API: `GET /api/portal/public/status/maintenance` (and related runtime tests under `portal/tests/runtime/` / `portal/tests/unit/maintenance/`)
+- API: `GET /api/portal/public/status/maintenance` (and related unit tests under `portal/tests/unit/workers/shared/maintenance-policy.test.ts` / `portal/tests/unit/maintenance/`)
 
 ## When invoked
 
 1. Read the UI ownership guide and the public maintenance HTML plus banner JS.
 2. Keep status-page presentation in contract/maintenance styles; do not restyle the Administration schedule tables here.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` and maintenance unit/runtime tests when behavior changes.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` and maintenance unit tests when behavior changes.

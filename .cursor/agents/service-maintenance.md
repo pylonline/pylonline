@@ -19,5 +19,5 @@ Pages **page-maintenance** and **page-administration** own UI. **element-banner*
 ## When invoked
 
 1. Change handlers, D1, and server-filled maintenance copy. Do not restyle the status card or alert rail.
-2. Run `portal/tests/api/admin/maintenance-window.api.test.mjs` and `portal/tests/runtime/maintenance*.ts` as relevant.
+2. Run `portal/tests/api/privileged/pylonline/status-maintenance-windows.api.test.mjs` and `portal/tests/unit/workers/shared/maintenance-policy.test.ts` as relevant.
 3. Tell the calling page agent which endpoints changed.

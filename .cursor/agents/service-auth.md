@@ -22,9 +22,9 @@ Major route groups: signup/signin, OTP send/verify/resend, WebAuthn login/regist
 
 ## Tests
 
-- Manifest: `portal/tests/services/auth/manifest.json`
-- Command: `npm run test:service:auth`
-- Live: `portal/tests/api/auth/`
+- Manifest: `portal/tests/manifests/identity.json`
+- Command: `npm run test:worker:identity`
+- Live: `portal/tests/api/identity/`
 
 ## When invoked
 

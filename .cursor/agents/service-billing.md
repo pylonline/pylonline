@@ -25,8 +25,8 @@ Pages **page-settings** (payment methods) and **page-subscription** (plan UI) ow
 
 ## Tests
 
-- Manifest: `portal/tests/services/payments/manifest.json` (folder name `payments` ↔ this agent)
-- Command: `npm run test:service:payments`
+- Manifest: `portal/tests/manifests/billing.json`
+- Command: `npm run test:worker:billing`
 - Also: account payments unit contracts under `portal/tests/unit/account/`
 
 ## When invoked

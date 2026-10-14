@@ -22,9 +22,9 @@ Install/hardware entitlement fulfillment may gate on a completed consultation â€
 
 ## Tests
 
-- Manifest: `portal/tests/services/scheduling/manifest.json` (folder name `scheduling` â†” this agent)
-- Command: `npm run test:service:scheduling`
-- Live: `portal/tests/api/public/consultation.api.test.mjs`, `portal/tests/api/admin/consultation.api.test.mjs`
+- Manifest: `portal/tests/manifests/public.json` (booking) + `privileged.json` (admin consultation inbox)
+- Command: `npm run test:worker:public` / `npm run test:worker:privileged`
+- Live: `portal/tests/api/public/scheduling-consultations.api.test.mjs`, `portal/tests/api/privileged/pylonline/consultations.api.test.mjs`
 
 ## When invoked
 

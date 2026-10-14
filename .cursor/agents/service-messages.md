@@ -21,8 +21,8 @@ Past-due / grace / revoked entitlement emails (when wired) land here with **serv
 
 ## Tests
 
-- Manifest: `portal/tests/services/messages/manifest.json`
-- Command: `npm run test:service:messages`
+- Manifest: `portal/tests/manifests/private.json` (admin support inbox: `privileged.json`)
+- Command: `npm run test:worker:private`
 
 ## When invoked
 

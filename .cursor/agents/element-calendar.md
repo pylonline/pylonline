@@ -20,7 +20,7 @@ Read **docs/architecture/ui/where-to-change-ui.md**.
 
 - `/registration` birthdate
 - `/consultation` inline schedule (`.template-calendar-inline-host`)
-- `/secure/admin/logs`, `/secure/admin/database` date/time filters
+- `/portal/secure/privileged/pylonline-privileged/system/logger/logs`, `/portal/secure/privileged/pylonline-privileged/system/database` date/time filters
 - Administration / maintenance scheduling
 - Shared range picker (Communication stats and similar)
 

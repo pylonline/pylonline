@@ -85,7 +85,7 @@ Column widths for subscription/entitlement record tables may still live in the r
 
 - `portal/tests/unit/pages/secure-subscription-shell.test.mjs`
 - `portal/tests/unit/subscription/` (contracts + loading state)
-- Service suite: `npm run test:service:subscription`
+- Worker suite: `npm run test:worker:private`
 
 ## When invoked
 

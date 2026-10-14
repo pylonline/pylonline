@@ -21,5 +21,5 @@ Pages **page-metrics**, **page-audit**, and **page-logs** own UI. You own collec
 
 1. Change handlers and D1. Consent-gated product analytics stay consent-gated.
 2. Do not restyle charts/tables — **page-metrics** / **page-audit** / **page-logs** + **element-table**.
-3. Run relevant `portal/tests/api/` and runtime tests.
+3. Run relevant `portal/tests/api/` and `portal/tests/unit/workers/logger/` tests.
 4. Tell the calling page agent which endpoints changed.
