@@ -25,5 +25,5 @@ Read **docs/architecture/ui/where-to-change-ui.md**.
 
 1. Confirm the change is the shared frame (backdrop, panel, head, close), not one dialog's fields.
 2. Edit the contract/partial. Do not restyle every admin editor from a route-override.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Tell the calling page agent what you changed.

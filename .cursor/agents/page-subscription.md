@@ -83,13 +83,13 @@ Column widths for subscription/entitlement record tables may still live in the r
 
 ## Tests
 
-- `portal/tests/unit/pages/secure-subscription-shell.test.mjs`
-- `portal/tests/unit/subscription/` (contracts + loading state)
+- `portal/tests/unit/pages/subscription/secure-subscription-shell.unit.test.mjs`
+- `portal/tests/unit/api/subscription/` (contracts + loading state)
 - Worker suite: `npm run test:worker:private`
 
 ## When invoked
 
 1. Read the UI ownership guide and this page's HTML/JS/CSS.
 2. Page composition belongs in the route-override; reusable table/card atoms stay in core-ui.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Entitlement/checkout handler changes → **service-subscription** (and **service-billing** for cards).

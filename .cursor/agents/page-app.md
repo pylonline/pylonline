@@ -62,4 +62,4 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and this page's HTML plus the app-download contract CSS.
 2. Shared QR/store-button look stays in core-ui; do not duplicate it in a portal override.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.

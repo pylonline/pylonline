@@ -34,5 +34,5 @@ Card-adjacent “footer links” *inside* a form card (`.template-card-secondary
 
 1. Confirm the change is the shared site footer, not a card-internal link row.
 2. Edit the contract/partial files above. Cookie **popup** stays with **page-cookie-popup**.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` and home-template shell tests.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/` and home-template shell tests.
 4. Tell the calling page agent what you changed.

@@ -42,4 +42,4 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and the matching legal HTML.
 2. Prefer contract legal-prose styles; delegate card chrome to **element-card**.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.

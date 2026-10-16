@@ -13,7 +13,7 @@ Past-due / grace / revoked entitlement emails (when wired) land here with **serv
 ## Scope
 
 - Member threads: `/api/portal/private/inbox*` (`portal/src/api/account/messages.ts`)
-- Support send: `POST /api/portal/public/inbox/support` (`portal/src/api/account/support.ts`, `supportRateLimit.ts`) — used by both public `/support` and `/portal/secure/private/inbox` (guest allowed)
+- Support send: `POST /api/portal/public/inbox/support` (`portal/src/api/account/support.ts`, `supportRateLimit.ts`) — used by both public `/support` and `/portal/secure/private/inbox/new` (guest allowed)
 - Admin: `/api/portal/privileged/pylonline/tickets` (`portal/src/api/admin/support.ts`, `supportSerializers.ts`)
 - D1: `portal/src/db/site/account/support.ts`, `supportStats.ts`
 - Routes: `portal/src/api/routes/definitions/account.ts`, `.../admin.ts`

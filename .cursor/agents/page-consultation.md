@@ -72,5 +72,5 @@ Handlers, D1, Calendar sync, and outbound mail belong to **service** agents. If 
 
 1. Read the UI ownership guide and this page's HTML/JS.
 2. Delegate field/button/card/calendar chrome to element agents; booking APIs and Calendar to **service-consultation**; mail to **service-email**.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` and `portal/tests/unit/pages/consultation-page-contract.test.mjs`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/` and `portal/tests/unit/pages/consultation/consultation-page-contract.unit.test.mjs`.
 4. After consultation CSS edits while `npm run dev` is already running, run `npm run ui:sync` in `portal/` (do not restart wrangler). Otherwise the browser keeps the old layout from the stale `template-portal-shell.css` bundle.

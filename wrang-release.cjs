@@ -917,7 +917,7 @@ function parseTapResultLine(line) {
   return null;
 }
 
-/** Playwright list reporter: `✓  1 [project] › file.spec.ts:12:3 › title (1.2s)`. */
+/** Playwright list reporter: `✓  1 [project] › file.ui.spec.ts:12:3 › title (1.2s)`. */
 function parsePlaywrightResultLine(line) {
   const trimmed = stripAnsi(line).trim();
   const match = trimmed.match(/^(?<mark>[✓✔✘×✖✗√]|[-○])\s+(?:(?<id>\d+)\s+)?(?<rest>.+)$/);
@@ -1689,7 +1689,20 @@ function buildTestNameIndex(repoDirPath) {
   const testDirs = ["tests", "test"].map((segment) => path.join(repoDirPath, segment));
   const files = [];
   for (const dir of testDirs) {
-    files.push(...collectFilesRecursive(dir, [".test.cjs", ".test.mjs", ".test.js", ".test.ts"]));
+    files.push(
+      ...collectFilesRecursive(dir, [
+        ".unit.test.cjs",
+        ".unit.test.mjs",
+        ".unit.test.js",
+        ".unit.test.ts",
+        ".api.test.mjs",
+        ".test.cjs",
+        ".test.mjs",
+        ".test.js",
+        ".test.ts",
+        ".ui.spec.ts",
+      ])
+    );
   }
   const index = new Map();
   const pattern = /\b(?:test|it)\s*\(\s*["'`]{1}([^"'`]+)["'`]{1}\s*,/g;

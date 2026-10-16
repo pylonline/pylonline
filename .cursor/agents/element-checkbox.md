@@ -33,5 +33,5 @@ This atom must look the same on every page that uses it.
 
 1. Confirm the change is the shared checkbox/toggle atom, not one page's copy or layout.
 2. Edit the contract files above. Cookie **popup copy/flow** stays with the **page-cookie-popup** page agent; checkbox chrome stays here.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Tell the calling page agent what you changed.

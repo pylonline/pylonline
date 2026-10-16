@@ -65,5 +65,5 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and this page's HTML/JS/CSS.
 2. Settings composition stays in route-overrides; reusable field/card atoms stay in core-ui.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
-4. View-mode `.template-card-control-shell.template-settings-info-shell` always keeps the rest gradient (Name, Username, Theme, Address, and any new readout using that shell). Do not hide `::before` when `data-settings-surface` is empty or `:placeholder-shown`. Contract: `portal/tests/unit/css/settings-view-mode-rest-gradient.test.mjs`. Shared atom first-paint / no-fade: `template-card-control-shell-gradient.test.mjs` and `card-field-presentation-sync.test.mjs` (element-text-input).
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
+4. View-mode `.template-card-control-shell.template-settings-info-shell` always keeps the rest gradient (Name, Username, Theme, Address, and any new readout using that shell). Do not hide `::before` when `data-settings-surface` is empty or `:placeholder-shown`. Contract: `portal/tests/unit/static/css/settings/settings-view-mode-rest-gradient.unit.test.mjs`. Shared atom first-paint / no-fade: `template-card-control-shell-gradient.unit.test.mjs` and `card-field-presentation-sync.unit.test.mjs` (element-text-input).

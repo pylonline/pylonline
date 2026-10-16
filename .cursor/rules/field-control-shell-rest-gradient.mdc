@@ -1,6 +1,6 @@
 ---
 description: Control-shell rest gradient stays on; do not fade or empty-hide it (reload thrash).
-globs: "**/template-card-insecure-fields.css,**/card-fields.js,**/template-settings-field*.css,**/template-interactive-fields.css,**/route-secure-settings/**,**/secure-settings.html,**/render-settings.ts,**/settings-view-mode-rest-gradient.test.mjs,**/template-card-control-shell-gradient.test.mjs,**/card-field-presentation-sync.test.mjs"
+globs: "**/template-card-insecure-fields.css,**/card-fields.js,**/template-settings-field*.css,**/template-interactive-fields.css,**/route-secure-settings/**,**/secure-settings.html,**/render-settings.ts,**/settings-view-mode-rest-gradient.unit.test.mjs,**/template-card-control-shell-gradient.unit.test.mjs,**/card-field-presentation-sync.unit.test.mjs"
 alwaysApply: false
 ---
 
@@ -15,4 +15,4 @@ alwaysApply: false
 
 Settings view-mode info shells (`.template-settings-info-shell`) inherit this; do not add Username-only exceptions.
 
-Contracts: `portal/tests/unit/css/template-card-control-shell-gradient.test.mjs`, `portal/tests/unit/ui/card-field-presentation-sync.test.mjs`, `portal/tests/unit/css/settings-view-mode-rest-gradient.test.mjs`.
+Contracts: `portal/tests/unit/static/css/template-card-control-shell-gradient.unit.test.mjs`, `portal/tests/unit/static/ui/card-field-presentation-sync.unit.test.mjs`, `portal/tests/unit/static/css/settings-view-mode-rest-gradient.unit.test.mjs`.

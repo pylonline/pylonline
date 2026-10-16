@@ -39,7 +39,7 @@ Emerging (page JS already uses; move column CSS into profiles when touched):
 - CSS: `template-secure-record-tables.css`, `template-table-profiles.css`, `template-data-table-primitives.css`, `template-data-table-columns.css`, `template-support-records.css`
 - JS: `core-ui/assets/js/template/components/table.js`
 - Inline rails / wheel trap → **element-table-scrollbar** (`table-scrollbars.js`), not this agent
-- Tests: `portal/tests/unit/css/table-profiles-contract.test.mjs`
+- Tests: `portal/tests/unit/static/css/tables/table-profiles-contract.unit.test.mjs`
 
 ## When invoked
 

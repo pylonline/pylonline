@@ -5,3 +5,5 @@ coverage/
 .DS_Store
 *.log
 core-ui/dist/build-info.json
+graphify-out/
+graphify-parts/

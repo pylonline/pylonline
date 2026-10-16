@@ -1,12 +1,33 @@
 {
   "folders": [
-    { "path": ".", "name": "pylonline" },
-    { "path": "core-ui", "name": "core-ui" },
-    { "path": "portal", "name": "portal" },
-    { "path": "pylon", "name": "pylon" },
-    { "path": "core-lint", "name": "core-lint" },
-    { "path": "docs", "name": "docs" },
-    { "path": "scripts", "name": "scripts" }
+    {
+      "name": "pylonline",
+      "path": "."
+    },
+    {
+      "name": "core-ui",
+      "path": "core-ui"
+    },
+    {
+      "name": "portal",
+      "path": "portal"
+    },
+    {
+      "name": "pylon",
+      "path": "pylon"
+    },
+    {
+      "name": "core-lint",
+      "path": "core-lint"
+    },
+    {
+      "name": "docs",
+      "path": "docs"
+    },
+    {
+      "name": "scripts",
+      "path": "scripts"
+    }
   ],
   "settings": {
     "workbench.colorTheme": "Default Light Modern",

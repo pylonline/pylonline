@@ -23,5 +23,5 @@ Read **docs/architecture/ui/where-to-change-ui.md** and **docs/architecture/ui/u
 
 1. Confirm the change is the shared card atom, not one page's inner copy.
 2. Edit the contract files above. Do not restyle titles in a route-override unless it is a documented exception.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Tell the calling page agent what you changed.

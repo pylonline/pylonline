@@ -44,4 +44,4 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and the matching recovery HTML.
 2. Delegate field/button/card chrome to element agents.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.

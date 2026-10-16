@@ -26,11 +26,11 @@ Read **docs/architecture/ui/where-to-change-ui.md**. Search existing classes bef
 - CSS: `core-ui/assets/css/template-contract/shell/template-menu-drawer.css`, `template-navigation-shared.css`
 - JS: `core-ui/assets/js/template/shell/menu-drawer.js`, `soft-navigation.js`, `topbar-runtime.js`
 - Link source of truth: `portal/src/api/html/constants.ts` (keep in sync with `menu-drawer.js`)
-- Tests: `portal/tests/unit/pages/menu-consistency.test.mjs`
+- Tests: `portal/tests/unit/pages/cross-page/menu-consistency.unit.test.mjs`
 
 ## When invoked
 
 1. Confirm the change is shared menu/nav chrome or the shared link list, not one page's inner content.
 2. Edit the shell files above. Do not restyle the drawer from a route-override.
-3. After CSS or link-list changes, run `portal/tests/unit/pages/menu-consistency.test.mjs` and relevant CSS tests.
+3. After CSS or link-list changes, run `portal/tests/unit/pages/cross-page/menu-consistency.unit.test.mjs` and relevant CSS tests.
 4. Tell the calling page agent what you changed.

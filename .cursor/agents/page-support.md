@@ -6,7 +6,7 @@ model: inherit
 
 You are the **page-support** page specialist for Pylonline (public `/support`).
 
-This is **not** the signed-in inbox. For `/portal/secure/private/inbox` threads and the member form, use the **page-support-inbox** agent.
+This is **not** the signed-in inbox. For the member form at `/portal/secure/private/inbox/new`, use the **page-support-inbox** agent; for the `/portal/secure/private/inbox` list, use **page-messages**.
 
 ## UI ownership
 
@@ -50,7 +50,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/support` (public). Members are rewritten to `/portal/secure/private/inbox`; admins keep both drawer links.
+- Route: `/support` (public). Members are redirected to `/portal/secure/private/inbox/new`; admins keep both drawer links.
 - Body: `template-support-page`
 - Chrome: `portal/src/pages/insecure/insecure-route-shared.ts`
 - Table/form `aria-label`: `Support request` on the public form
@@ -66,4 +66,4 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and this page's HTML/JS.
 2. Keep guest-form changes here; do not restyle `table[aria-label="Support requests"]` unless the task is explicitly shared.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.

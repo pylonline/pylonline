@@ -27,7 +27,7 @@ Pages **page-settings** (payment methods) and **page-subscription** (plan UI) ow
 
 - Manifest: `portal/tests/manifests/billing.json`
 - Command: `npm run test:worker:billing`
-- Also: account payments unit contracts under `portal/tests/unit/account/`
+- Also: account payments unit contracts under `portal/tests/unit/api/account/`
 
 ## When invoked
 

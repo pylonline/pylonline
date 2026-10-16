@@ -59,7 +59,7 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 ### Notes
 
 - **Entitlements** stay under `service-subscription` + `page-subscription` (spec: [subscription-entitlements.md](docs/architecture/portal/subscription-entitlements.md)). No separate monitor agent until register HTTP exists.
-- Test manifests are one per Worker: `portal/tests/manifests/<worker>.json` (`public`, `private`, `privileged`, `identity`, `billing`, `dispatcher`, `monitor`, `logger`, `status`), enforced by `tests/unit/workers/worker-manifests.test.ts`. Service agents map onto Workers: `service-auth`/`service-account` security ↔ `identity`, `service-billing` ↔ `billing`, `service-email` + notify producers ↔ `dispatcher`, `service-observability` ↔ `logger`, `service-messages`/`service-subscription` ↔ `private` (admin inbox ↔ `privileged`), `service-consultation` ↔ `public` + `privileged`. Run with `npm run test:worker:<worker>` from `portal/`.
+- Test manifests are one per Worker: `portal/tests/manifests/<worker>.json` (`public`, `private`, `privileged`, `identity`, `billing`, `dispatcher`, `monitor`, `logger`, `status`), enforced by `tests/unit/workers/worker-manifests.unit.test.ts`. Service agents map onto Workers: `service-auth`/`service-account` security ↔ `identity`, `service-billing` ↔ `billing`, `service-email` + notify producers ↔ `dispatcher`, `service-observability` ↔ `logger`, `service-messages`/`service-subscription` ↔ `private` (admin inbox ↔ `privileged`), `service-consultation` ↔ `public` + `privileged`. Run with `npm run test:worker:<worker>` from `portal/`.
 
 ## Backend and non-UI
 
@@ -75,6 +75,7 @@ Page agents **delegate** shared-atom work to element agents and **handlers/D1** 
 ## Tests
 
 - **Local ports:** the operator's `npm run dev:stack` owns `127.0.0.1:8788`–`8798` (Workers, D1 browser `8797`, readiness gate `8798`). Never start test Workers there — `test:api` frees its ports first and would kill stack Workers. Use `npm run test:pr:api` (picks `8801`+), or `PORT` / `PORTAL_PUBLIC_PEER_PORT` ≥ `8801`, or `PORTAL_API_SKIP_WRANGLER=1` against the running stack.
-- After CSS boundary changes, run relevant unit tests under `portal/tests/unit/css/`.
+- After CSS boundary changes, run relevant unit tests under `portal/tests/unit/static/css/`.
+- UI specs sit under `portal/tests/ui/{public,private,privileged,shared,elements}/`. Unit tests follow portal source: `portal/tests/unit/{api,db,lib,pages,workers,static,scripts}/`. API suites stay under `portal/tests/api/<worker>/`.
 - Per-Worker suites: `npm run test:worker:public|private|privileged|identity|billing|dispatcher|monitor|logger|status|all` (from `portal/`).
 - Portal test matrix and commands: **[docs/runbooks/portal/portal-test-plan/](docs/runbooks/portal/portal-test-plan/)**; quick reference in [portal/README.md](portal/README.md) (`pnpm run test:unit`, `test:api`, `test:ui`).

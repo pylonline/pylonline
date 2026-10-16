@@ -79,12 +79,12 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Tests
 
-- `portal/tests/unit/pages/menu-consistency.test.mjs` (gated drawer link)
-- Extend shell/page contracts similar to `secure-subscription-shell.test.mjs` when adding coverage
+- `portal/tests/unit/pages/cross-page/menu-consistency.unit.test.mjs` (gated drawer link)
+- Extend shell/page contracts similar to `secure-subscription-shell.unit.test.mjs` when adding coverage
 
 ## When invoked
 
 1. Read the UI ownership guide and this page's HTML/JS.
 2. Page composition belongs in the route; reusable calendar/card atoms stay in core-ui / consultation CSS.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Entitlement gate / API changes → **service-subscription** (or the owning service-requests handler owner).

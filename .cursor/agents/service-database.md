@@ -6,12 +6,12 @@ model: inherit
 
 You are the **service-database** specialist for Pylonline (admin D1 browser APIs).
 
-Page **page-database** owns the UI. You own `/api/admin/tables*` and row mutation handlers.
+Page **page-database** owns the UI. You own `/api/portal/privileged/pylonline-privileged/system/database/tables*` and row mutation handlers.
 
 ## Scope
 
 - API: `portal/src/api/admin/tables.ts`, `tableUtils.ts`, `operations.ts`
-- Routes: `/api/admin/tables`, `/api/admin/table`, `/api/admin/row/*`
+- Routes: `/api/portal/privileged/pylonline-privileged/system/database/tables`, `/api/portal/privileged/pylonline-privileged/system/database/tables/:name`, `/api/portal/privileged/pylonline-privileged/system/database/rows/*`
 - Shared D1 helpers: `portal/src/db/site/shared/`
 - Schema/migrations: `portal/migrations/` (coordinate; do not invent ad-hoc DDL in handlers)
 

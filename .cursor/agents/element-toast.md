@@ -22,5 +22,5 @@ Read **docs/architecture/ui/where-to-change-ui.md**.
 
 1. Confirm the change is the shared toast shell, not in-card status text.
 2. Edit the contract/partial. Do not add a portal route-override for the same look.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Tell the calling page agent what you changed.

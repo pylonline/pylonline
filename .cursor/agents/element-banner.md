@@ -32,5 +32,5 @@ Read **docs/architecture/ui/where-to-change-ui.md**. Search existing classes bef
 
 1. Confirm the change is shared banner chrome, not one page's inner content.
 2. Edit the contract/shell files above. Cookie **popup** panel stays with **page-cookie-popup**; maintenance **schedule admin UI** stays with **page-administration**.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` and banner unit tests.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/` and banner unit tests.
 4. Tell the calling page agent what you changed.

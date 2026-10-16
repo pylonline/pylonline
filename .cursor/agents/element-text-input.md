@@ -33,6 +33,6 @@ This atom must look the same on every page that uses it.
 
 1. Confirm the change is the shared field atom, not one page's layout.
 2. Edit the contract files above. Do not add a portal route-override for the same look.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Tell the calling page agent what you changed so they can keep route composition in sync.
-5. Any new `.template-card-field` + `.template-card-control-shell` inherits rest `::before` opacity 1 with no opacity transition. Do not fade overlay on class re-apply or delayed 120ms/600ms boot resync. Readonly/disabled shells are not focus-surfaces that hide the overlay. Contract: `portal/tests/unit/css/template-card-control-shell-gradient.test.mjs` and `portal/tests/unit/ui/card-field-presentation-sync.test.mjs`.
+5. Any new `.template-card-field` + `.template-card-control-shell` inherits rest `::before` opacity 1 with no opacity transition. Do not fade overlay on class re-apply or delayed 120ms/600ms boot resync. Readonly/disabled shells are not focus-surfaces that hide the overlay. Contract: `portal/tests/unit/static/css/shell/template-card-control-shell-gradient.unit.test.mjs` and `portal/tests/unit/static/ui/chrome/card-field-presentation-sync.unit.test.mjs`.

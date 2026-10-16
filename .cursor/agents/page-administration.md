@@ -76,4 +76,4 @@ Admin **entitlements** chrome is not on this page yet (APIs exist under **servic
 
 1. Read the UI ownership guide and this page's HTML/JS/CSS.
 2. Page composition belongs in administration/runtime route CSS; reusable cards/tables stay in core-ui.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.

@@ -59,7 +59,7 @@ Subscription-shaped webhook payloads (`checkout.session.completed` for a plan, `
 - Manifest: `portal/tests/manifests/private.json` (admin installations: `privileged.json`)
 - Command: `npm run test:worker:private` (from `portal/`)
 - Live API: `tests/api/private/account-installations.api.test.mjs`, `tests/api/privileged/pylonline-private/installations*.api.test.mjs`, `tests/api/monitor/activation.api.test.mjs`
-- Worker: `tests/unit/workers/private/installations-*.test.ts`, `private-queue-installation.test.ts`
+- Worker: `tests/unit/workers/private/installations-*.test.ts`, `private-queue-installation.unit.test.ts`
 
 ## When invoked
 

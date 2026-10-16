@@ -12,4 +12,4 @@ When contrast checks, DevTools, or a11y tests flag the banner **menu drawer**:
 - Selected/current tray text uses `--template-menu-drawer-current-text-color` (`#ffe8f8` day / `#062e2b` night).
 - Day rest ink is **white** on purple; night rest ink is **black** on lime (nav and user name). Resting underlines are the inverse. Hover is black day / white night.
 - The action-row separator may stay **interactive accent at 0.62** (non-text exception).
-- In tests: see `portal/tests/unit/css/menu-drawer-contrast-allowlist.test.mjs` and `menu-drawer-ink-contract.test.mjs`.
+- In tests: see `portal/tests/unit/static/css/banners/menu-drawer-contrast-allowlist.unit.test.mjs` and `menu-drawer-ink-contract.unit.test.mjs`.

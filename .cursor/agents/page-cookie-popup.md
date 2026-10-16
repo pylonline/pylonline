@@ -64,4 +64,4 @@ Other pages reuse `template-cookie-popup` classes for generic modals. Change tho
 
 1. Read the UI ownership guide and the cookie surfaces HTML/CSS/JS.
 2. Keep banner + popup in the shared contract; do not add a portal route-override for site-wide cookie chrome.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` and cookie/home-template shell tests.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/` and cookie/home-template shell tests.

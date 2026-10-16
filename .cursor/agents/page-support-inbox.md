@@ -1,12 +1,12 @@
 ---
 name: page-support-inbox
-description: Use when working on the signed-in Support inbox (/portal/secure/private/inbox). Account-bound form and "Open Support Requests" / "Closed Support Requests" threads. Not the public Support page (/support).
+description: Use when working on the signed-in support request form (/portal/secure/private/inbox/new). Account-bound form and "Open Support Requests" / "Closed Support Requests" threads. Not the public Support page (/support) or the inbox list (/portal/secure/private/inbox, page-messages).
 model: inherit
 ---
 
-You are the **page-support-inbox** specialist for Pylonline (`/portal/secure/private/inbox`).
+You are the **page-support-inbox** specialist for Pylonline (`/portal/secure/private/inbox/new`).
 
-This is **not** the public guest form. For `/support`, use the **page-support** agent.
+This is **not** the public guest form. For `/support`, use the **page-support** agent. The inbox list at `/portal/secure/private/inbox` (whose "Open Support Request" button links here) belongs to **page-messages**.
 
 ## UI ownership
 
@@ -51,7 +51,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- Route: `/portal/secure/private/inbox` (signed-in)
+- Route: `/portal/secure/private/inbox/new` (signed-in; guests are sent to `/signin?next=…/inbox/new`, members visiting `/support` are redirected here)
 - Body: `template-settings-page template-support-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
 - Section `aria-label`: `Secure support`
@@ -63,10 +63,10 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 - JS: `portal/static/assets/js/route-insecure/support.js` (shared form), `portal/static/assets/js/route-secure-support/index.js` (wired in `HEAD_SECURE_SUPPORT`)
 - CSS: `portal/static/assets/css/route-overrides/template-secure-support-page.css`
 - Contract inbox: `core-ui/assets/css/template-contract/primitives/template-support-records.css`
-- Shell test: `portal/tests/unit/pages/secure-support-shell.test.mjs`
+- Shell test: `portal/tests/unit/pages/support-inbox/secure-support-shell.unit.test.mjs`
 
 ## When invoked
 
 1. Read the UI ownership guide and this page's HTML/JS/CSS.
 2. Scope inbox selectors to the correct `table[aria-label]` values. Do not mirror column layouts in route-overrides.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/` (including table-profiles contract tests when columns change).
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/` (including table-profiles contract tests when columns change).

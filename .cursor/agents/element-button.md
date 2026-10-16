@@ -24,5 +24,5 @@ Read **docs/architecture/ui/where-to-change-ui.md** and **docs/architecture/ui/u
 1. Confirm the change is shared button chrome, not one page's label copy.
 2. Edit the contract files. Landing CTAs on `/` stay visually in this atom; Home page copy stays with **page-home**.
 3. New text CTAs must wrap copy in the correct label span (never bare text inside `.template-card-submit`); prefer `createTemplateActionButton` / `renderTemplateActionButtonHtml`.
-4. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+4. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 5. Tell the calling page agent what you changed.

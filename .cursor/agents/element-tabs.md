@@ -24,5 +24,5 @@ Read **docs/architecture/ui/where-to-change-ui.md**.
 
 1. Confirm the change is shared tab chrome, not which sections a page lists.
 2. Edit `template-tablist.css` / shared tab JS.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
 4. Tell the calling page agent what you changed.

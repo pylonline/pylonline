@@ -24,11 +24,11 @@ Offset under banners (`--page-scrollbar-offset-top`, `--template-scrollbar-gap-b
 - JS: `core-ui/assets/js/template/shell/page-scrollbar.js` (wired from `init.js`)
 - CSS: `foundation/base.css`, `foundation/base-tokens.css`; related offset in `surfaces/template-secure.css`, `surfaces/template-route-canvas.css`
 - Related (not this rail): `scroll-chrome.js` is mobile topbar auto-hide / background darken — only touch it if page-scroll coupling is the bug
-- Tests: `portal/tests/unit/ui/page-scrollbar-style.test.mjs`
+- Tests: `portal/tests/unit/static/ui/chrome/page-scrollbar-style.unit.test.mjs`
 
 ## When invoked
 
 1. Confirm the change is the **document** rail (`.page-scrollbar`), not `.template-inline-scrollbar`.
 2. Edit foundation tokens/CSS and `page-scrollbar.js`.
-3. Run `portal/tests/unit/ui/page-scrollbar-style.test.mjs` and relevant CSS tests.
+3. Run `portal/tests/unit/static/ui/chrome/page-scrollbar-style.unit.test.mjs` and relevant CSS tests.
 4. Tell the calling agent what you changed.

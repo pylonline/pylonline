@@ -104,6 +104,12 @@ jobs:
           pnpm --filter @pylonline/portal --fail-if-no-match run ui:sync
           pnpm --filter @pylonline/portal --fail-if-no-match run check
 
+      - name: Check pylon
+        run: |
+          pnpm --filter @pylonline/pylon --fail-if-no-match run core-ui:prepare
+          pnpm --filter @pylonline/pylon --fail-if-no-match run ui:sync
+          pnpm --filter @pylonline/pylon --fail-if-no-match run check
+
       - name: Remove consumed suite label
         if: ${{ always() && !cancelled() }}
         uses: ./.github/actions/pr-suite-label

@@ -64,10 +64,10 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Unit tests (workspace aggregate)
-        run: pnpm -r --if-present --filter '!@pylonline/pylon' run test
+        run: pnpm -r --if-present run test
 
       - name: Coverage (workspace aggregate)
-        run: pnpm -r --if-present --filter '!@pylonline/pylon' run coverage
+        run: pnpm -r --if-present run coverage
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4

@@ -10,7 +10,7 @@ Pages **page-metrics**, **page-audit**, and **page-logs** own UI. You own collec
 
 ## Scope
 
-- Public collect: `POST /api/metrics/collect`
+- Public collect: `POST /api/portal/public/metrics`
 - Admin metrics: `/api/admin/metrics*`
 - Audit: `/api/admin/audit*`
 - Logs: `/api/admin/logs*`

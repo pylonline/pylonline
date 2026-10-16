@@ -61,4 +61,4 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and this page's HTML/JS.
 2. Keep member file-download UI here; do not restyle the App store QR card unless the change is shared contract.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.

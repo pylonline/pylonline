@@ -64,4 +64,4 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and this page's HTML/JS/CSS.
 2. Column widths go in table profiles by `aria-label`; do not duplicate them in communications CSS.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.

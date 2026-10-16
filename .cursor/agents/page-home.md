@@ -43,4 +43,4 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 1. Read the UI ownership guide and the landing/home HTML.
 2. Delegate shared CTAs to **element-button**, footer/nav to **element-footer** / **element-menu**.
-3. After CSS boundary changes, run relevant tests under `portal/tests/unit/css/`.
+3. After CSS boundary changes, run relevant tests under `portal/tests/unit/static/css/`.
