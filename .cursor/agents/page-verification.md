@@ -1,6 +1,6 @@
 ---
 name: page-verification
-description: Use when working on email/sign-in verification pages (/signin/verification, /email-verification, /resend-email-verification, /enter-email-verification).
+description: Use when working on email/sign-in verification pages (/signin/verification, /email-verification, /enter-email-verification).
 model: inherit
 ---
 
@@ -31,14 +31,13 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 ## Surface
 
 - `/signin/verification` — `auth-signin-verification.html` (shares `HEAD_SIGNIN`)
-- `/email-verification` — `auth-email-verification.html`
-- `/resend-email-verification` — `auth-resend-email-verification.html` (`HEAD_AUTH_RECOVERY`)
-- `/enter-email-verification` — `auth-enter-email-verification.html`
+- `/email-verification` — `auth-email-verification.html` (token consume only; no public resend form)
+- `/enter-email-verification` — `auth-enter-email-verification.html` (cookie-bound OTP after signup or unverified password login)
 - Bodies: `template-signin-verification-page`, `template-resend-email-verification-page`, `enter-email-verification-page`
 
 ## Key files
 
-- HTML: `portal/src/pages/insecure/routes/auth-signin-verification.html`, `auth-email-verification.html`, `auth-resend-email-verification.html`, `auth-enter-email-verification.html`
+- HTML: `portal/src/pages/insecure/routes/auth-signin-verification.html`, `auth-email-verification.html`, `auth-enter-email-verification.html`
 - JS: `portal/static/assets/js/route-insecure/signin.js`, `recovery.js`
 - CSS: contract OTP/auth (`template-card-otp-channels.css`, `template-auth-shared.css`)
 
