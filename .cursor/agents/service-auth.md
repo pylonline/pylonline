@@ -10,13 +10,13 @@ Pages **page-sign-in**, **page-sign-up**, **page-registration**, **page-verifica
 
 ## Scope
 
-- `portal/src/api/auth/` — `credentials.ts`, `registration.ts`, `session.ts`, `webauthn.ts`, `loginOtpContact.ts`, `shared.ts`, `constants.ts`, `index.ts`
+- `portal/src/api/auth/` — `credentials.ts`, `credentials-otp.ts`, `credentials-shared.ts`, `registration-signup.ts`, `registration-oauth.ts`, `registration-otp.ts`, `session.ts`, `webauthn.ts`, `loginOtpContact.ts`, `shared.ts`, `constants.ts`
+- Identity Worker entry: `portal/src/index-identity.ts`, `portal/src/api/auth/worker/`
 - Rate limits: `authRateLimit.ts`, `otpRateLimit.ts`, `emailVerificationRateLimit.ts`, `passwordRecoveryRateLimit.ts`
 - Shared session helper: `portal/src/api/session.ts`, `portal/src/api/html/auth-guards.ts`
 - D1: `portal/src/db/site/auth/` (`sessions.ts`, `users.ts`, `passwords.ts`, `otps.ts`, `webauthn.ts`, `rateLimits.ts`, `emails.ts`, `devices.ts`)
-- Routes: `portal/src/api/routes/definitions/auth.ts`
 
-There is no standalone `oauth.ts`. Google OAuth flows live in `registration.ts` / `credentials.ts` (+ auth constants).
+Google OAuth lives in `registration-oauth.ts`. HTTP helpers come from `lib/http/*`, not `lib/utils.ts`.
 
 Major route groups: signup/signin, OTP send/verify/resend, WebAuthn login/register, OAuth complete/resume, session/me/logout, password forgot/reset, email verification.
 

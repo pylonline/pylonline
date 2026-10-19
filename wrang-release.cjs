@@ -137,16 +137,24 @@ function prunePortalTmpPreflightCopies() {
   }
 }
 
+function preflightFullLogPath() {
+  return preflightLogDir ? path.join(preflightLogDir, "preflight.log") : "";
+}
+
 function installPreflightPortalTmpTee(stamp) {
   fs.mkdirSync(PREFLIGHT_PORTAL_TMP, { recursive: true });
-  const logFile = path.join(PREFLIGHT_PORTAL_TMP, `preflight-${stamp}.log`);
-  const stream = fs.createWriteStream(logFile);
-  preflightPortalTmpLog = logFile;
+  const cacheLogFile = preflightFullLogPath();
+  const tmpLogFile = path.join(PREFLIGHT_PORTAL_TMP, `preflight-${stamp}.log`);
+  const cacheStream = cacheLogFile ? fs.createWriteStream(cacheLogFile) : null;
+  const tmpStream = fs.createWriteStream(tmpLogFile);
+  preflightPortalTmpLog = tmpLogFile;
   const writeFile = (chunk, encoding) => {
     const text = Buffer.isBuffer(chunk)
       ? chunk.toString(typeof encoding === "string" ? encoding : "utf8")
       : String(chunk ?? "");
-    stream.write(stripAnsi(text));
+    const stripped = stripAnsi(text);
+    cacheStream?.write(stripped);
+    tmpStream.write(stripped);
   };
   const wrap = (stdio) => {
     const original = stdio.write.bind(stdio);
@@ -161,7 +169,7 @@ function installPreflightPortalTmpTee(stamp) {
   };
   wrap(process.stdout);
   wrap(process.stderr);
-  return logFile;
+  return cacheLogFile || tmpLogFile;
 }
 
 function publishPreflightPortalTmpCopies() {
@@ -178,6 +186,11 @@ function publishPreflightPortalTmpCopies() {
   if (preflightPortalTmpLog && fs.existsSync(preflightPortalTmpLog)) {
     fs.copyFileSync(preflightPortalTmpLog, path.join(PREFLIGHT_PORTAL_TMP, "preflight-latest.log"));
   }
+  const cacheLog = preflightFullLogPath();
+  if (cacheLog && fs.existsSync(cacheLog)) {
+    const latestLog = path.join(PREFLIGHT_LOG_ROOT, "latest.log");
+    fs.copyFileSync(cacheLog, latestLog);
+  }
   prunePortalTmpPreflightCopies();
   return summaryDest
     ? path.relative(ROOT, summaryDest)
@@ -189,11 +202,11 @@ function initPreflightLogDir() {
   preflightLogDir = path.join(PREFLIGHT_LOG_ROOT, stamp);
   fs.mkdirSync(preflightLogDir, { recursive: true });
   const latest = path.join(PREFLIGHT_LOG_ROOT, "latest");
-  fs.rmSync(latest, { force: true });
+  fs.rmSync(latest, { recursive: true, force: true });
   fs.symlinkSync(stamp, latest);
   const runs = fs
     .readdirSync(PREFLIGHT_LOG_ROOT)
-    .filter((entry) => entry !== "latest")
+    .filter((entry) => entry !== "latest" && entry !== "latest.log")
     .sort();
   for (const old of runs.slice(0, Math.max(0, runs.length - PREFLIGHT_LOG_RUNS_KEPT))) {
     fs.rmSync(path.join(PREFLIGHT_LOG_ROOT, old), { recursive: true, force: true });
@@ -1316,9 +1329,10 @@ function writePreflightSummaryFile(args, summary, failures, totalMs) {
     "## Layout",
     "",
     "- `SUMMARY.md` — this file",
+    "- `preflight.log` — full terminal transcript (ANSI stripped); also `.cache/preflight/latest.log`",
     "- `checks/<repo>/` — full stdout/stderr for each preflight step",
     "- `workers/portal/` — portal `test:pr` wrangler logs (one file per phase × plane)",
-    "- `portal/tmp/preflight-<run>.log` and `.md` — terminal transcript + this summary (also `preflight-latest.*`)",
+    "- `portal/tmp/preflight-<run>.log` and `.md` — copies of the transcript + this summary (also `preflight-latest.*`)",
     "",
     "Portal `test:pr` starts **public** (identity, billing, monitor, dispatcher, logger as aux Workers) and **privileged** (its own identity + dispatcher + logger) on ports outside `dev:stack` (default 8801/8802). There is no standalone monitor or pylon wrangler process in this suite.",
     "",
@@ -2747,7 +2761,9 @@ async function main() {
   const logDir = initPreflightLogDir();
   console.log("Running release preflight...");
   console.log(`pnpm executable: ${pnpmExecutable}`);
-  console.log(`logs: ${path.relative(ROOT, logDir)} (also portal/tmp/preflight-latest.log)`);
+  console.log(
+    `logs: ${path.relative(ROOT, logDir)} (full transcript: .cache/preflight/latest/preflight.log)`
+  );
   if (!pylonPreflightEnabled()) {
     console.log("pylon: skipped (scaffold repo — no scripts/prepare-core-ui.cjs)");
   }
@@ -3020,7 +3036,7 @@ async function main() {
     const summaryFile = writePreflightSummaryFile(args, summary, failures, totalMs);
     const portalTmpFile = publishPreflightPortalTmpCopies();
     console.log(
-      `logs: ${path.relative(ROOT, preflightLogDir)} (also .cache/preflight/latest${summaryFile ? `; ${summaryFile}` : ""}${portalTmpFile ? `; ${portalTmpFile}` : ""})`
+      `logs: ${path.relative(ROOT, preflightLogDir)} (full transcript: .cache/preflight/latest/preflight.log${summaryFile ? `; ${summaryFile}` : ""}${portalTmpFile ? `; ${portalTmpFile}` : ""})`
     );
   }
   if (summary.autoFormatRetries > 0) {
