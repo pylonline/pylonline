@@ -53,7 +53,7 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 - Section `aria-label`: `Secure subscription`
 - Body: `template-settings-page template-subscription-page`
 - Chrome: `portal/src/pages/secure/secure-route-shared.ts`
-- Related legal: `/subscription-terms`
+- Related legal: `/installation-terms`
 
 ### UI concepts
 

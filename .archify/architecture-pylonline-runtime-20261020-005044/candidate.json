@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Pylonline runtime",
+    "locale": "en",
+    "output": ".archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/pylonline/portal.git",
+      "provider": "github",
+      "revision": "be36997ca3437496dd386e5987511d96e05d354f"
+    }
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Browser",
+      "sublabel": "member / admin",
+      "pos": [40, 40],
+      "size": [120, 64]
+    },
+    {
+      "id": "product_http",
+      "type": "frontend",
+      "label": "Product HTTP",
+      "sublabel": "public · private · privileged",
+      "tag": "HTML + /api",
+      "pos": [260, 40],
+      "size": [168, 70],
+      "sources": [
+        { "path": "src/index-public.ts", "line": 21, "end_line": 29, "label": "public fetch" },
+        { "path": "src/index-private.ts", "line": 23, "end_line": 31, "label": "private fetch" },
+        { "path": "src/index-privileged.ts", "line": 18, "end_line": 23, "label": "Access gate" }
+      ]
+    },
+    {
+      "id": "identity",
+      "type": "security",
+      "label": "Identity",
+      "sublabel": "sessions · OTP · OAuth",
+      "tag": "no public DNS",
+      "pos": [540, 40],
+      "size": [140, 70],
+      "sources": [
+        { "path": "src/index-identity.ts", "line": 72, "end_line": 88, "label": "internal /api" },
+        { "path": "src/lib/service/authIntrospectClient.ts", "line": 21, "end_line": 47, "label": "session hop" },
+        { "path": "wrangler.identity.toml", "line": 6, "end_line": 8, "label": "workers_dev off" }
+      ]
+    },
+    {
+      "id": "identity_d1",
+      "type": "database",
+      "label": "Identity D1",
+      "sublabel": "DB_IDENTITY",
+      "pos": [750, 40],
+      "size": [140, 64],
+      "sources": [
+        { "path": "wrangler.identity.toml", "line": 38, "end_line": 42, "label": "identity binding" },
+        { "path": "src/db/gateway.ts", "line": 33, "end_line": 40, "label": "domain map" }
+      ]
+    },
+    {
+      "id": "product_d1",
+      "type": "database",
+      "label": "Product D1",
+      "sublabel": "DB_PRODUCT",
+      "pos": [260, 200],
+      "size": [168, 64],
+      "sources": [
+        { "path": "wrangler.public.toml", "line": 31, "end_line": 35, "label": "product binding" },
+        { "path": "src/db/gateway.ts", "line": 60, "end_line": 65, "label": "dbFor" }
+      ]
+    },
+    {
+      "id": "billing",
+      "type": "backend",
+      "label": "Billing",
+      "sublabel": "setup · checkout",
+      "tag": "no public DNS",
+      "pos": [540, 200],
+      "size": [140, 64],
+      "sources": [
+        { "path": "src/index-billing.ts", "line": 1, "end_line": 5, "label": "billing entry" },
+        { "path": "src/lib/service/paymentsClient.ts", "line": 114, "end_line": 143, "label": "checkout hop" },
+        { "path": "wrangler.billing.toml", "line": 9, "end_line": 9, "label": "workers_dev off" }
+      ]
+    },
+    {
+      "id": "payments_d1",
+      "type": "database",
+      "label": "Payments D1",
+      "sublabel": "DB_BILLING",
+      "pos": [750, 200],
+      "size": [140, 64],
+      "sources": [
+        { "path": "wrangler.billing.toml", "line": 34, "end_line": 34, "label": "billing D1" },
+        { "path": "src/db/gateway.ts", "line": 47, "end_line": 54, "label": "DB_BILLING alias" }
+      ]
+    },
+    {
+      "id": "stripe",
+      "type": "external",
+      "label": "Stripe",
+      "sublabel": "money movement",
+      "pos": [960, 200],
+      "size": [130, 64],
+      "sources": [
+        { "path": "src/api/routes/definitions/webhooks.ts", "line": 6, "end_line": 12, "label": "public ingress" },
+        { "path": "src/lib/service/paymentsClient.ts", "line": 205, "end_line": 229, "label": "raw forward" }
+      ]
+    },
+    {
+      "id": "dispatcher",
+      "type": "backend",
+      "label": "Dispatcher",
+      "sublabel": "mail · SMS · calendar",
+      "tag": "no public DNS",
+      "pos": [540, 360],
+      "size": [140, 64],
+      "sources": [
+        { "path": "src/index-dispatcher.ts", "line": 1, "end_line": 11, "label": "queue consumer" },
+        { "path": "src/lib/service/notifyEmail.ts", "line": 27, "end_line": 46, "label": "enqueue only" },
+        { "path": "src/lib/service/hopAssertion.ts", "line": 313, "end_line": 328, "label": "Ed25519 hop" }
+      ]
+    },
+    {
+      "id": "dispatcher_d1",
+      "type": "database",
+      "label": "Dispatcher D1",
+      "sublabel": "mail_jobs",
+      "pos": [750, 360],
+      "size": [140, 64],
+      "sources": [
+        { "path": "wrangler.dispatcher.toml", "line": 8, "end_line": 8, "label": "workers_dev off" },
+        { "path": "wrangler.dispatcher.toml", "line": 28, "end_line": 28, "label": "dispatcher D1" }
+      ]
+    },
+    {
+      "id": "resend",
+      "type": "external",
+      "label": "Resend",
+      "sublabel": "Twilio · Calendar",
+      "pos": [960, 360],
+      "size": [130, 64],
+      "sources": [
+        { "path": "src/index-dispatcher.ts", "line": 15, "end_line": 22, "label": "outbound I/O" },
+        { "path": "src/api/routes/definitions/webhooks.ts", "line": 13, "end_line": 17, "label": "Resend ingress" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Cloudflare Workers + D1",
+      "wraps": [
+        "product_http",
+        "identity",
+        "identity_d1",
+        "product_d1",
+        "billing",
+        "payments_d1",
+        "dispatcher",
+        "dispatcher_d1"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Hop-only isolates",
+      "wraps": ["identity", "billing", "dispatcher"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-to-product",
+      "from": "browser",
+      "to": "product_http",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "product-to-identity",
+      "from": "product_http",
+      "to": "identity",
+      "label": "session hop",
+      "variant": "security"
+    },
+    {
+      "id": "identity-to-d1",
+      "from": "identity",
+      "to": "identity_d1",
+      "label": "SQL"
+    },
+    {
+      "id": "product-to-product-d1",
+      "from": "product_http",
+      "to": "product_d1",
+      "label": "SQL"
+    },
+    {
+      "id": "product-to-billing",
+      "from": "product_http",
+      "to": "billing",
+      "label": "BILLING hop",
+      "variant": "security"
+    },
+    {
+      "id": "billing-to-payments-d1",
+      "from": "billing",
+      "to": "payments_d1",
+      "label": "SQL"
+    },
+    {
+      "id": "billing-to-stripe",
+      "from": "billing",
+      "to": "stripe",
+      "label": "Stripe API"
+    },
+    {
+      "id": "billing-to-product",
+      "from": "billing",
+      "to": "product_http",
+      "label": "install queue",
+      "variant": "dashed"
+    },
+    {
+      "id": "product-to-dispatcher",
+      "from": "product_http",
+      "to": "dispatcher",
+      "label": "enqueue",
+      "variant": "dashed"
+    },
+    {
+      "id": "dispatcher-to-d1",
+      "from": "dispatcher",
+      "to": "dispatcher_d1",
+      "label": "SQL"
+    },
+    {
+      "id": "dispatcher-to-resend",
+      "from": "dispatcher",
+      "to": "resend",
+      "label": "send"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "HTTP planes",
+      "items": [
+        "public :8788 and private :8790 share the main host; privileged :8789 is admin.* and requires Cloudflare Access",
+        "core-ui assets ship from each browser Worker ASSETS binding; there is no product Worker"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Owner D1s",
+      "items": [
+        "dbFor never falls back to env.DB; public/private/privileged bind product only and hop other domains",
+        "Billing writes entitlements through the installation queue; private applies those jobs to product D1"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust",
+      "items": [
+        "Identity, billing, dispatcher, and logger have no public DNS; hops use x-hop-assertion (Ed25519) plus HopReplayGuard",
+        "Stripe and Resend webhooks hit public /api/webhooks/* and forward raw bytes to the owner Worker"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Not on the main path",
+      "items": [
+        "Monitor (mTLS, Pylon enroll), logger (tail → worker_log_events), and status (maintenance board) hop from the HTTP planes",
+        "Pylon desktop nodes call monitor; OTP generation stays on identity while dispatcher only delivers"
+      ]
+    }
+  ]
+}

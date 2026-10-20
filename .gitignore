@@ -8,3 +8,5 @@ core-ui/dist/build-info.json
 graphify-out/
 graphify-out-auth/
 graphify-parts/
+.archify/
+.taste-skill/

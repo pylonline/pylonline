@@ -1,6 +1,6 @@
 ---
 name: page-legal
-description: Use when working on legal/content policy pages (/terms, /privacy-policy, /cookie-policy, /newsletter-terms, /subscription-terms).
+description: Use when working on legal/content policy pages (/terms, /privacy-policy, /cookie-policy, /newsletter-terms, /installation-terms).
 model: inherit
 ---
 
@@ -30,12 +30,12 @@ Handlers, D1, and webhooks belong to **service** agents. If the task is API or d
 
 ## Surface
 
-- `/terms`, `/privacy-policy`, `/cookie-policy`, `/newsletter-terms`, `/subscription-terms`
+- `/terms`, `/privacy-policy`, `/cookie-policy`, `/newsletter-terms`, `/installation-terms`
 - Body: `template-legal-page` plus per-page class (`template-terms-page`, …)
 
 ## Key files
 
-- HTML: `portal/src/pages/insecure/routes/legal-terms.html`, `legal-privacy-policy.html`, `legal-cookie-policy.html`, `legal-newsletter-terms.html`, `legal-subscription-terms.html`
+- HTML: `portal/src/pages/insecure/routes/legal-terms.html`, `legal-privacy-policy.html`, `legal-cookie-policy.html`, `legal-newsletter-terms.html`, `legal-installation-terms.html`
 - CSS: `core-ui/assets/css/template-contract/primitives/template-card-legal-prose.css`
 
 ## When invoked

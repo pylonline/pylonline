@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/candidate.json",
+    "sha256": "578215b96552fe51b2dbac3a5f881ac8ee496dd54f0d105547e2c03e32938516",
+    "bytes": 8544
+  },
+  "artifact": {
+    "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+    "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+    "bytes": 838646
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-3/pylonline-runtime.finalize.json",
+    "summaryReceipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-3/pylonline-runtime.finalize-summary.json",
+    "browserCheckReceipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-3/pylonline-runtime.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-20T00:58:44.374Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 14173,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedBends": 3
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "billing-to-stripe",
+            "from": "billing",
+            "to": "stripe",
+            "label": "Stripe API",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "bends": 4,
+          "stretch": 1.195,
+          "directCorridorBlockers": [
+            {
+              "id": "payments_d1",
+              "label": "Payments D1",
+              "box": [
+                750,
+                200,
+                140,
+                64
+              ]
+            }
+          ]
+        },
+        {
+          "relationship": {
+            "id": "product-to-dispatcher",
+            "from": "product_http",
+            "to": "dispatcher",
+            "label": "enqueue",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "bends": 4,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "dispatcher-to-resend",
+            "from": "dispatcher",
+            "to": "resend",
+            "label": "send",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "bends": 4,
+          "stretch": 1.195,
+          "directCorridorBlockers": [
+            {
+              "id": "dispatcher_d1",
+              "label": "Dispatcher D1",
+              "box": [
+                750,
+                360,
+                140,
+                64
+              ]
+            }
+          ]
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "product_http → dispatcher needs 4 bends: move node product_http or dispatcher so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "933481e3-1480-4dd4-b73f-374d9a413320",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/candidate.json",
+  "output": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+  "specification": {
+    "sha256": "578215b96552fe51b2dbac3a5f881ac8ee496dd54f0d105547e2c03e32938516",
+    "bytes": 8544
+  },
+  "artifact": {
+    "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+    "bytes": 838646
+  }
+}

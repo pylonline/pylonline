@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "browser-check",
+  "evidenceKind": "automated-browser",
+  "status": "fail",
+  "visualReview": "not-requested",
+  "provenance": "current",
+  "deliveryReceiptId": "8c06de7b-38c9-4190-9c77-7775cef12f8a",
+  "artifact": {
+    "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+    "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+    "bytes": 838646
+  },
+  "state": {
+    "detail": "read",
+    "motion": "still"
+  },
+  "chrome": {
+    "status": "available",
+    "executable": "/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  },
+  "diagnostics": [
+    {
+      "code": "viewer/browser-check-runtime",
+      "severity": "error",
+      "message": "browser-check could not complete its Chrome inspection.",
+      "subject": {
+        "artifact": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html"
+      },
+      "evidence": {
+        "reason": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[864152:864152:1020/010059.320840:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:130] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n[1020/010059.359965:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq: No such file or directory (2)\n[1020/010059.360256:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq: No such file or directory (2)\nReceived signal 6\n#0 0x5c09a492be33 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6e7ce32)\n#1 0x5c09a994fd34 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbea0d33)\n#2 0x7caa16c45330 (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4532f)\n#3 0x7caa16c4527e (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4527d)\n#4 0x7caa16c288ff (/usr/lib/x86_64-linux-gnu/libc.so.6+0x288fe)\n#5 0x5c09a9946205 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe97204)\n#6 0x5c09a9904ecd (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55ecc)\n#7 0x5c09a9904e1d (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55e1c)\n#8 0x5c09a28ddcf2 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x4e2ecf1)\n#9 0x5c09a4333b99 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6884b98)\n#10 0x5c09a37ea548 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5d3b547)\n#11 0x5c09a8dca5c5 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xb31b5c4)\n#12 0x5c09a389a5dc (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5deb5db)\n#13 0x5c09a389706f (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5de806e)\n#14 0x7caa16c2a1ca (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)\n#15 0x7caa16c2a28b (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)\n#16 0x5c09a4bbb38a (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x710c389)\n  r8: 00001190000bc267  r9: 0000000000000001 r10: 0000000000000008 r11: 0000000000000246\n r12: 0000000000000006 r13: 0000000000000268 r14: 0000000000000016 r15: 00007ffd0ab35188\n  di: 00000000000d2f98  si: 00000000000d2f98  bp: 00007ffd0ab34b00  bx: 00000000000d2f98\n  dx: 0000000000000006  ax: 0000000000000000  cx: 00007caa16c9ec0c  sp: 00007ffd0ab34ac0\n  ip: 00007caa16c9ec0c efl: 0000000000000246 cgf: 002b000000000033 erf: 0000000000000000\n trp: 0000000000000000 msk: 0000000000000000 cr2: 0000000000000000\n[end of stack trace]\nChrome transport: Node v22.23.3, libuv 1.51.0, linux; pid=864152, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+      },
+      "supportedFixes": [
+        "resolve the reported Chrome inspection error, then rerun browser-check"
+      ]
+    }
+  ],
+  "containment": {
+    "status": "fail",
+    "policy": "fit-or-reader-declared-readable-vertical-scroll",
+    "viewports": []
+  },
+  "themeStates": {
+    "status": "fail",
+    "viewports": []
+  },
+  "readability": {
+    "status": "fail",
+    "minimumProjectedNodeTextPx": 6,
+    "viewports": []
+  },
+  "viewerChrome": {
+    "status": "fail",
+    "viewports": []
+  },
+  "captures": {
+    "status": "not-requested",
+    "screenshots": [],
+    "contactSheet": null
+  },
+  "sidecars": {
+    "directory": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-2",
+    "receipt": "pylonline-runtime.browser-check.json",
+    "files": []
+  },
+  "error": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[864152:864152:1020/010059.320840:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:130] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n[1020/010059.359965:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq: No such file or directory (2)\n[1020/010059.360256:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq: No such file or directory (2)\nReceived signal 6\n#0 0x5c09a492be33 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6e7ce32)\n#1 0x5c09a994fd34 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbea0d33)\n#2 0x7caa16c45330 (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4532f)\n#3 0x7caa16c4527e (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4527d)\n#4 0x7caa16c288ff (/usr/lib/x86_64-linux-gnu/libc.so.6+0x288fe)\n#5 0x5c09a9946205 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe97204)\n#6 0x5c09a9904ecd (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55ecc)\n#7 0x5c09a9904e1d (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55e1c)\n#8 0x5c09a28ddcf2 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x4e2ecf1)\n#9 0x5c09a4333b99 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6884b98)\n#10 0x5c09a37ea548 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5d3b547)\n#11 0x5c09a8dca5c5 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xb31b5c4)\n#12 0x5c09a389a5dc (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5deb5db)\n#13 0x5c09a389706f (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5de806e)\n#14 0x7caa16c2a1ca (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)\n#15 0x7caa16c2a28b (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)\n#16 0x5c09a4bbb38a (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x710c389)\n  r8: 00001190000bc267  r9: 0000000000000001 r10: 0000000000000008 r11: 0000000000000246\n r12: 0000000000000006 r13: 0000000000000268 r14: 0000000000000016 r15: 00007ffd0ab35188\n  di: 00000000000d2f98  si: 00000000000d2f98  bp: 00007ffd0ab34b00  bx: 00000000000d2f98\n  dx: 0000000000000006  ax: 0000000000000000  cx: 00007caa16c9ec0c  sp: 00007ffd0ab34ac0\n  ip: 00007caa16c9ec0c efl: 0000000000000246 cgf: 002b000000000033 erf: 0000000000000000\n trp: 0000000000000000 msk: 0000000000000000 cr2: 0000000000000000\n[end of stack trace]\nChrome transport: Node v22.23.3, libuv 1.51.0, linux; pid=864152, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+}

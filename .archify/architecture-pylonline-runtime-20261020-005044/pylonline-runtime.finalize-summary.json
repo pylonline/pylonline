@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "skipped",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/candidate.json",
+    "sha256": "578215b96552fe51b2dbac3a5f881ac8ee496dd54f0d105547e2c03e32938516",
+    "bytes": 8544
+  },
+  "artifact": {
+    "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+    "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+    "bytes": 838646
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "skipped"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/chrome-unavailable",
+      "severity": "warning",
+      "message": "No supported browser found. Install Chrome/Chromium (or Microsoft Edge), or set ARCHIFY_CHROME to its executable path.",
+      "subject": {
+        "artifact": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html"
+      },
+      "evidence": {
+        "executable": null
+      },
+      "supportedFixes": [
+        "set ARCHIFY_CHROME to a Chrome/Chromium executable (or Microsoft Edge) and rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.finalize.json",
+    "summaryReceipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.finalize-summary.json",
+    "browserCheckReceipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-20T00:58:44.374Z",
+    "source": "network",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3246,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}

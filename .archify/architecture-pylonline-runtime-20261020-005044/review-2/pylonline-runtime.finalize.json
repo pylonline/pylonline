@@ -1,0 +1,448 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-10-20T01:00:56.233Z",
+  "specification": {
+    "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/candidate.json",
+    "sha256": "578215b96552fe51b2dbac3a5f881ac8ee496dd54f0d105547e2c03e32938516",
+    "bytes": 8544
+  },
+  "artifact": {
+    "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+    "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+    "bytes": 838646
+  },
+  "stages": {
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "/home/asta/.nvm/versions/node/v22.23.3/bin/node",
+        "/home/asta/.cursor/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/candidate.json",
+        "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "/home/asta/pylonline-workspace/pylonline/portal",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "578215b96552fe51b2dbac3a5f881ac8ee496dd54f0d105547e2c03e32938516",
+          "bytes": 8544
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 1500,
+      "command": [
+        "/home/asta/.nvm/versions/node/v22.23.3/bin/node",
+        "/home/asta/.cursor/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/candidate.json",
+        "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "/home/asta/pylonline-workspace/pylonline/portal",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "8c06de7b-38c9-4190-9c77-7775cef12f8a",
+        "ok": true,
+        "command": "deliver",
+        "type": "architecture",
+        "input": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/candidate.json",
+        "output": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+        "specification": {
+          "sha256": "578215b96552fe51b2dbac3a5f881ac8ee496dd54f0d105547e2c03e32938516",
+          "bytes": 8544
+        },
+        "artifact": {
+          "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+          "bytes": 838646
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        },
+        "evidence": {
+          "verified": true,
+          "repository": "https://github.com/pylonline/portal",
+          "revision": "be36997ca3437496dd386e5987511d96e05d354f",
+          "references": 24
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 409,
+      "command": [
+        "/home/asta/.nvm/versions/node/v22.23.3/bin/node",
+        "/home/asta/.cursor/skills/archify/bin/archify.mjs",
+        "check",
+        "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+        "artifact": {
+          "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+          "bytes": 838646
+        },
+        "checks": [
+          {
+            "name": "single_svg",
+            "ok": true,
+            "details": [
+              "found 1 <svg> block(s)"
+            ]
+          },
+          {
+            "name": "finite_svg",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "orthogonal_arrows",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "label_route_clearance",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_crossings",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_corridors",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "container_border_runs",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "route_rhythm",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "legend_clearance",
+            "ok": true,
+            "details": []
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "metrics": {
+            "properCrossings": 0,
+            "resolvedCrossovers": 0,
+            "ambiguousCorridors": 0,
+            "arrowheadCollisions": 0,
+            "containerBorderRuns": 0,
+            "labelRouteClearanceIssues": 0,
+            "labelCanvasOverflowIssues": 0,
+            "minLabelRouteClearance": 8,
+            "desktopReadabilityIssues": 0,
+            "viewportHeightIssues": 0,
+            "minProjectedNodeTextPx": 7.5,
+            "maxBends": 4,
+            "routesOverSuggestedBends": 3,
+            "maxStretch": 1.195,
+            "routesOverSuggestedStretch": 0,
+            "minSegmentPx": 24,
+            "minInteriorSegmentPx": 28,
+            "shortSegmentCount": 0,
+            "shortEndpointSegmentCount": 0,
+            "shortInteriorSegmentCount": 0,
+            "microSegmentCount": 0
+          },
+          "suggestedLimits": {
+            "bendsPerRelationship": 2,
+            "stretch": 1.35,
+            "segmentPx": 16,
+            "microSegmentPx": 8
+          },
+          "routeReview": {
+            "crossings": [],
+            "detours": [
+              {
+                "relationship": {
+                  "id": "billing-to-stripe",
+                  "from": "billing",
+                  "to": "stripe",
+                  "label": "Stripe API",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "bends": 4,
+                "stretch": 1.195,
+                "directCorridorBlockers": [
+                  {
+                    "id": "payments_d1",
+                    "label": "Payments D1",
+                    "box": [
+                      750,
+                      200,
+                      140,
+                      64
+                    ]
+                  }
+                ]
+              },
+              {
+                "relationship": {
+                  "id": "product-to-dispatcher",
+                  "from": "product_http",
+                  "to": "dispatcher",
+                  "label": "enqueue",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "bends": 4,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "dispatcher-to-resend",
+                  "from": "dispatcher",
+                  "to": "resend",
+                  "label": "send",
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
+                },
+                "bends": 4,
+                "stretch": 1.195,
+                "directCorridorBlockers": [
+                  {
+                    "id": "dispatcher_d1",
+                    "label": "Dispatcher D1",
+                    "box": [
+                      750,
+                      360,
+                      140,
+                      64
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "leadingSpace": {
+            "measured": true,
+            "emptyTopPx": 10,
+            "emptyTopRatio": 0.02,
+            "occupiedTop": 10,
+            "viewBoxTop": 0,
+            "canvasHeight": 512,
+            "typicalNodeHeight": 64,
+            "reviewSuggested": false
+          },
+          "desktopReadability": {
+            "budgetBasis": "recognized-declared-wide",
+            "readerContract": "declared-wide-v1",
+            "availableDiagramWidth": 1059.375,
+            "actualBudgetPx": 1059.375,
+            "actualReaderWidth": 1089.375,
+            "desiredReaderWidth": 1089.375,
+            "viewportCap": 1376,
+            "limit": "source-size",
+            "requestedTargetPx": 7.5,
+            "requestedTargetMet": true,
+            "hardFloorPx": 6,
+            "hardFloorMet": true,
+            "minimumOwner": {
+              "kind": "edge",
+              "id": "browser-to-product",
+              "from": "browser",
+              "to": "product_http"
+            },
+            "minimumSourceTextPx": 8,
+            "minimumProjectedTextPx": 7.5,
+            "semanticTextCount": 35
+          },
+          "issues": []
+        },
+        "provenance": "current",
+        "deliveryReceiptId": "8c06de7b-38c9-4190-9c77-7775cef12f8a"
+      }
+    },
+    "browser-check": {
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": 1427,
+      "command": [
+        "/home/asta/.nvm/versions/node/v22.23.3/bin/node",
+        "/home/asta/.cursor/skills/archify/bin/archify.mjs",
+        "browser-check",
+        "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+        "--json",
+        "--require-provenance",
+        "--out-dir",
+        "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-2"
+      ],
+      "execution": "in-process",
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": false,
+        "command": "browser-check",
+        "evidenceKind": "automated-browser",
+        "status": "fail",
+        "visualReview": "not-requested",
+        "provenance": "current",
+        "deliveryReceiptId": "8c06de7b-38c9-4190-9c77-7775cef12f8a",
+        "artifact": {
+          "path": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html",
+          "sha256": "9bf94463ac16f812ba9f457be7e33bd2953dc09256e82ab90c8adabc2701e454",
+          "bytes": 838646
+        },
+        "state": {
+          "detail": "read",
+          "motion": "still"
+        },
+        "chrome": {
+          "status": "available",
+          "executable": "/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+        },
+        "diagnostics": [
+          {
+            "code": "viewer/browser-check-runtime",
+            "severity": "error",
+            "message": "browser-check could not complete its Chrome inspection.",
+            "subject": {
+              "artifact": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html"
+            },
+            "evidence": {
+              "reason": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[864152:864152:1020/010059.320840:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:130] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n[1020/010059.359965:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq: No such file or directory (2)\n[1020/010059.360256:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq: No such file or directory (2)\nReceived signal 6\n#0 0x5c09a492be33 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6e7ce32)\n#1 0x5c09a994fd34 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbea0d33)\n#2 0x7caa16c45330 (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4532f)\n#3 0x7caa16c4527e (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4527d)\n#4 0x7caa16c288ff (/usr/lib/x86_64-linux-gnu/libc.so.6+0x288fe)\n#5 0x5c09a9946205 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe97204)\n#6 0x5c09a9904ecd (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55ecc)\n#7 0x5c09a9904e1d (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55e1c)\n#8 0x5c09a28ddcf2 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x4e2ecf1)\n#9 0x5c09a4333b99 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6884b98)\n#10 0x5c09a37ea548 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5d3b547)\n#11 0x5c09a8dca5c5 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xb31b5c4)\n#12 0x5c09a389a5dc (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5deb5db)\n#13 0x5c09a389706f (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5de806e)\n#14 0x7caa16c2a1ca (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)\n#15 0x7caa16c2a28b (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)\n#16 0x5c09a4bbb38a (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x710c389)\n  r8: 00001190000bc267  r9: 0000000000000001 r10: 0000000000000008 r11: 0000000000000246\n r12: 0000000000000006 r13: 0000000000000268 r14: 0000000000000016 r15: 00007ffd0ab35188\n  di: 00000000000d2f98  si: 00000000000d2f98  bp: 00007ffd0ab34b00  bx: 00000000000d2f98\n  dx: 0000000000000006  ax: 0000000000000000  cx: 00007caa16c9ec0c  sp: 00007ffd0ab34ac0\n  ip: 00007caa16c9ec0c efl: 0000000000000246 cgf: 002b000000000033 erf: 0000000000000000\n trp: 0000000000000000 msk: 0000000000000000 cr2: 0000000000000000\n[end of stack trace]\nChrome transport: Node v22.23.3, libuv 1.51.0, linux; pid=864152, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+            },
+            "supportedFixes": [
+              "resolve the reported Chrome inspection error, then rerun browser-check"
+            ]
+          }
+        ],
+        "containment": {
+          "status": "fail",
+          "policy": "fit-or-reader-declared-readable-vertical-scroll",
+          "viewports": []
+        },
+        "themeStates": {
+          "status": "fail",
+          "viewports": []
+        },
+        "readability": {
+          "status": "fail",
+          "minimumProjectedNodeTextPx": 6,
+          "viewports": []
+        },
+        "viewerChrome": {
+          "status": "fail",
+          "viewports": []
+        },
+        "captures": {
+          "status": "not-requested",
+          "screenshots": [],
+          "contactSheet": null
+        },
+        "sidecars": {
+          "directory": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-2",
+          "receipt": "pylonline-runtime.browser-check.json",
+          "files": []
+        },
+        "error": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[864152:864152:1020/010059.320840:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:130] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n[1020/010059.359965:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq: No such file or directory (2)\n[1020/010059.360256:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq: No such file or directory (2)\nReceived signal 6\n#0 0x5c09a492be33 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6e7ce32)\n#1 0x5c09a994fd34 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbea0d33)\n#2 0x7caa16c45330 (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4532f)\n#3 0x7caa16c4527e (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4527d)\n#4 0x7caa16c288ff (/usr/lib/x86_64-linux-gnu/libc.so.6+0x288fe)\n#5 0x5c09a9946205 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe97204)\n#6 0x5c09a9904ecd (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55ecc)\n#7 0x5c09a9904e1d (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55e1c)\n#8 0x5c09a28ddcf2 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x4e2ecf1)\n#9 0x5c09a4333b99 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6884b98)\n#10 0x5c09a37ea548 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5d3b547)\n#11 0x5c09a8dca5c5 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xb31b5c4)\n#12 0x5c09a389a5dc (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5deb5db)\n#13 0x5c09a389706f (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5de806e)\n#14 0x7caa16c2a1ca (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)\n#15 0x7caa16c2a28b (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)\n#16 0x5c09a4bbb38a (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x710c389)\n  r8: 00001190000bc267  r9: 0000000000000001 r10: 0000000000000008 r11: 0000000000000246\n r12: 0000000000000006 r13: 0000000000000268 r14: 0000000000000016 r15: 00007ffd0ab35188\n  di: 00000000000d2f98  si: 00000000000d2f98  bp: 00007ffd0ab34b00  bx: 00000000000d2f98\n  dx: 0000000000000006  ax: 0000000000000000  cx: 00007caa16c9ec0c  sp: 00007ffd0ab34ac0\n  ip: 00007caa16c9ec0c efl: 0000000000000246 cgf: 002b000000000033 erf: 0000000000000000\n trp: 0000000000000000 msk: 0000000000000000 cr2: 0000000000000000\n[end of stack trace]\nChrome transport: Node v22.23.3, libuv 1.51.0, linux; pid=864152, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+      }
+    }
+  },
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "diagnostics": [
+    {
+      "code": "viewer/browser-check-runtime",
+      "severity": "error",
+      "message": "browser-check could not complete its Chrome inspection.",
+      "subject": {
+        "artifact": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/pylonline-runtime.html"
+      },
+      "evidence": {
+        "reason": "Chrome DevTools read pipe failed: stream ended\nChrome process: still running.\nChrome stderr:\n[864152:864152:1020/010059.320840:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:130] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n[1020/010059.359965:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq: No such file or directory (2)\n[1020/010059.360256:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq: No such file or directory (2)\nReceived signal 6\n#0 0x5c09a492be33 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6e7ce32)\n#1 0x5c09a994fd34 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbea0d33)\n#2 0x7caa16c45330 (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4532f)\n#3 0x7caa16c4527e (/usr/lib/x86_64-linux-gnu/libc.so.6+0x4527d)\n#4 0x7caa16c288ff (/usr/lib/x86_64-linux-gnu/libc.so.6+0x288fe)\n#5 0x5c09a9946205 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe97204)\n#6 0x5c09a9904ecd (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55ecc)\n#7 0x5c09a9904e1d (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xbe55e1c)\n#8 0x5c09a28ddcf2 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x4e2ecf1)\n#9 0x5c09a4333b99 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x6884b98)\n#10 0x5c09a37ea548 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5d3b547)\n#11 0x5c09a8dca5c5 (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0xb31b5c4)\n#12 0x5c09a389a5dc (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5deb5db)\n#13 0x5c09a389706f (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x5de806e)\n#14 0x7caa16c2a1ca (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)\n#15 0x7caa16c2a28b (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)\n#16 0x5c09a4bbb38a (/home/asta/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome+0x710c389)\n  r8: 00001190000bc267  r9: 0000000000000001 r10: 0000000000000008 r11: 0000000000000246\n r12: 0000000000000006 r13: 0000000000000268 r14: 0000000000000016 r15: 00007ffd0ab35188\n  di: 00000000000d2f98  si: 00000000000d2f98  bp: 00007ffd0ab34b00  bx: 00000000000d2f98\n  dx: 0000000000000006  ax: 0000000000000000  cx: 00007caa16c9ec0c  sp: 00007ffd0ab34ac0\n  ip: 00007caa16c9ec0c efl: 0000000000000246 cgf: 002b000000000033 erf: 0000000000000000\n trp: 0000000000000000 msk: 0000000000000000 cr2: 0000000000000000\n[end of stack trace]\nChrome transport: Node v22.23.3, libuv 1.51.0, linux; pid=864152, exitCode=null, signalCode=null.\nChrome read pipe: readable=false, ended=true, destroyed=false, receivedBytes=0, messages=0, bufferedBytes=0.\nChrome write pipe: writable=true, ended=false, destroyed=false, completedWrites=1, writtenBytes=50, bufferedBytes=0."
+      },
+      "supportedFixes": [
+        "resolve the reported Chrome inspection error, then rerun browser-check"
+      ]
+    }
+  ],
+  "evidence": {
+    "receipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-2/pylonline-runtime.finalize.json",
+    "summaryReceipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-2/pylonline-runtime.finalize-summary.json",
+    "browserCheckReceipt": "/home/asta/pylonline-workspace/pylonline/.archify/architecture-pylonline-runtime-20261020-005044/review-2/pylonline-runtime.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "failedStage": "browser-check",
+  "finishedAt": "2026-10-20T01:00:59.820Z",
+  "durationMs": 3586,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-20T00:58:44.374Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}
